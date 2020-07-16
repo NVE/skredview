@@ -4,6 +4,7 @@
   "description": "Visualises satellite-borne remote avalanche detections in Norway.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack --config webpack.config.js --mode development",
     "build": "webpack --config webpack.config.js --mode production"
   },
   "repository": {
@@ -17,10 +18,12 @@
   },
   "homepage": "https://github.com/widforss/skredview#readme",
   "dependencies": {
-    "ol": "^6.3.1"
-  },
-  "devDependencies": {
+    "@turf/boolean-within": "^6.0.1",
+    "@turf/helpers": "^6.1.4",
     "@types/ol": "^6.3.1",
+    "@types/proj4": "^2.5.0",
+    "ol": "^6.3.1",
+    "proj4": "^2.6.2",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.6",
     "webpack": "^4.43.0",

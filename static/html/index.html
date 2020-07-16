@@ -13,7 +13,46 @@
 </head>
 
 <body>
-    <div id="map"></div>
+    <div id="frame">
+        <div id="controls">
+            <h1>SatSkred Explorer</h1>
+            <div class="bottom-margin">
+                Date range:
+                <input type="date" id="date-start" name="start" min="2015-01-01">
+                –
+                <input type="date" id="date-end" name="end" max="2025-01-01">
+            </div>
+            <div class="bottom-margin">
+                Region:
+                <select id="region-selector" name="region" id="region">
+                    <option value=""></option>
+                </select>
+            </div>
+            <div id="legend" class="bottom-margin">
+                <h2>Legend</h2>
+                <div>
+                    <svg height="14" width="14">
+                        <circle id="new-circle" cx="7" cy="7" r="6"/>
+                    </svg>
+                    Temporal precision ≤ 24 h
+                </div>
+                <div>
+                    <svg height="14" width="14">
+                        <circle id="medium-circle" cx="7" cy="7" r="6"/>
+                    </svg>
+                    Temporal precision ≤ 48 h
+                </div>
+                <div>
+                    <svg height="14" width="14">
+                        <circle id="old-circle" cx="7" cy="7" r="6"/>
+                    </svg>
+                    Temporal precision > 48 h
+                </div>
+            </div>
+        </div>
+        <div id="map"></div>
+        <!--<div id="statistics"></div>-->
+    </div>
     <script src="static/js/skredview.js"></script>
 </body>
 </html>
