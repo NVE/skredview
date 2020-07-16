@@ -3,6 +3,35 @@ html, body {
     height:100%;
 }
 
-#map {
+#frame {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	align-items: stretch;
+	align-content: stretch;
     height: 100vh;
+}
+
+#map {
+    flex: 500px;
+    justify-content: stretch;
+    min-height: 70vh;
+}
+
+#controls {
+    margin: 20px;
+}
+
+#statistics {
+    margin: 20px;
+    width: 400px;
+}
+
+#region-selector {
+    width: 300px;
+}
+
+.bottom-margin {
+    margin-bottom: 20px;
 }

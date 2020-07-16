@@ -22,20 +22,9 @@ or
 # Compilation
     npm run build
 
-If you experience problems with compiling the client or if you run
-Windows and have disabled symlinks during installation of git, switch to the
+If you experience problems with compiling the client, switch to the
 [`widforss/compiled`](https://github.com/widforss/skredview/tree/compiled)
-branch, where the client is already compiled and symlinks are hard.
+branch, where the client is already compiled.
 
-# Run
-## Unix-like
-    export FLASK_APP=src/main.py
-    python -m flask run
-
-## Windows Command Prompt
-    set FLASK_APP=src\main.py
-    python -m flask run
-
-## Windows Powershell
-    $env:FLASK_APP = "src\main.py"
-    python -m flask run
+# Run development server
+    python src/main.py
