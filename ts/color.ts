@@ -1,0 +1,20 @@
+const COLORS = {
+    PRECISION_NEW: 'rgba(227, 0, 15,1)',
+    PRECISION_MEDIUM: 'rgba(243, 96, 0,1)',
+    PRECISION_OLD: 'rgba(255, 204, 51,1)',
+    SIZE_10_000: '#9BB9C2',
+    SIZE_50_000: '#6996A3',
+    SIZE_100_000: '#044157',
+    SIZE_500_000: '#033648',
+    SIZE_MAX: '#32332A',
+    EXPOSITION: 'rgb(117, 177, 0)',
+    BORDER: '#E3000F',
+    BORDER_SELECTED: '#75B100',
+    BORDER_EVENT: '#8F2924',
+    BORDER_SIZE: 'rgba(211,235,221,0.65)',
+    CLUSTER: '#DB7100',
+    BACKGROUND: 'rgb(244,244,244)',
+};
+const VECTOR_OPACITY = 0.65;
+
+export {COLORS, VECTOR_OPACITY};

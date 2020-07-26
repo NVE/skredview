@@ -41,29 +41,28 @@ def root():
 def events():
     q = f"""
         SELECT
-            h.[skredType],
-            h.[skredTidspunkt],
-            h.[noySkredTidspunkt],
-            h.[registrertDato],
-            h.[registrertAv],
-            h.[regStatus],
-            t.[skredAreal_m2],
-            t.[eksposisjonUtlopsomr],
-            t.[snittHelningUtlopssomr_gr],
-            t.[maksHelningUtlopsomr_gr],
-            t.[minHelningUtlopsomr_gr],
-            t.[hoydeStoppSkred_moh],
-            t.[noyHoydeStoppSkred],
-            h.[skredID],
-            u.[SHAPE].STAsBinary() AS geom
-        FROM [skredprod].[skred].[SKREDHENDELSE] AS h
-        LEFT JOIN [skredprod].[skred].[SKREDTEKNISKEPARAMETRE] AS t ON t.[skredID] = h.[skredID]
-        LEFT JOIN [skredprod].[skred].[UTLOPUTLOSNINGOMR] AS u ON u.[skredID] = h.[skredID]
-        WHERE h.[skredTidspunkt] >= ?
-            AND h.[skredTidspunkt] < ?
-            AND h.[registrertAv] = 'Sentinel-1'
-            AND h.[regStatus] != 'Slettet'
-        ORDER BY t.[registrertDato] DESC
+            h.skredID,
+            h.skredTidspunkt,
+            h.noySkredTidspunkt,
+            t.eksposisjonUtlosningsomr,
+            t.minHelningUtlopsomr_gr,
+            t.maksHelningUtlopsomr_gr,
+            t.snittHelningUtlopssomr_gr,
+            t.hoydeStoppSkred_moh,
+            t.noyHoydeStoppSkred,
+            h.regStatus,
+            h.registrertDato,
+            (SELECT MAX(v) FROM (VALUES (h.endretDato), (t.endretDato), (u.endretDato)) AS value(v)) as endretDato,
+            u.shape.STArea() AS area,
+            u.SHAPE.STAsBinary() AS geom
+        FROM skredprod.skred.SKREDHENDELSE AS h
+        LEFT JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
+        LEFT JOIN skredprod.skred.UTLOPUTLOSNINGOMR AS u ON u.skredID = h.skredID
+        WHERE h.skredTidspunkt >= ?
+            AND h.skredTidspunkt < ?
+            AND h.registrertAv = 'Sentinel-1'
+            AND h.regStatus != 'Slettet'
+        ORDER BY t.registrertDato DESC
     """
 
     start, end = date_parse(request)
@@ -74,30 +73,29 @@ def events():
 def events_within(w, s, e, n):
     q = f"""
         SELECT
-            h.[skredType],
-            h.[skredTidspunkt],
-            h.[noySkredTidspunkt],
-            h.[registrertDato],
-            h.[registrertAv],
-            h.[regStatus],
-            t.[skredAreal_m2],
-            t.[eksposisjonUtlopsomr],
-            t.[snittHelningUtlopssomr_gr],
-            t.[maksHelningUtlopsomr_gr],
-            t.[minHelningUtlopsomr_gr],
-            t.[hoydeStoppSkred_moh],
-            t.[noyHoydeStoppSkred],
-            h.[skredID],
-            u.[SHAPE].STAsBinary() AS geom
-        FROM [skredprod].[skred].[SKREDHENDELSE] AS h
-        LEFT JOIN [skredprod].[skred].[SKREDTEKNISKEPARAMETRE] AS t ON t.[skredID] = h.[skredID]
-        LEFT JOIN [skredprod].[skred].[UTLOPUTLOSNINGOMR] AS u ON u.[skredID] = h.[skredID]
-        WHERE u.[SHAPE].STIntersects(geometry::STPolyFromText(?, ?)) = 1
-            AND h.[skredTidspunkt] >= ?
-            AND h.[skredTidspunkt] < ?
-            AND h.[registrertAv] = 'Sentinel-1'
-            AND h.[regStatus] != 'Slettet'
-        ORDER BY t.[registrertDato] DESC
+            h.skredID,
+            h.skredTidspunkt,
+            h.noySkredTidspunkt,
+            t.eksposisjonUtlosningsomr,
+            t.minHelningUtlopsomr_gr,
+            t.maksHelningUtlopsomr_gr,
+            t.snittHelningUtlopssomr_gr,
+            t.hoydeStoppSkred_moh,
+            t.noyHoydeStoppSkred,
+            h.regStatus,
+            h.registrertDato,
+            (SELECT MAX(v) FROM (VALUES (h.endretDato), (t.endretDato), (u.endretDato)) AS value(v)) as endretDato,
+            u.shape.STArea() AS area,
+            u.SHAPE.STAsBinary() AS geom
+        FROM skredprod.skred.SKREDHENDELSE AS h
+        LEFT JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
+        LEFT JOIN skredprod.skred.UTLOPUTLOSNINGOMR AS u ON u.skredID = h.skredID
+        WHERE u.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
+            AND h.skredTidspunkt >= ?
+            AND h.skredTidspunkt < ?
+            AND h.registrertAv = 'Sentinel-1'
+            AND h.regStatus != 'Slettet'
+        ORDER BY t.registrertDato DESC
     """
 
     start, end = date_parse(request)
@@ -109,20 +107,19 @@ def events_within(w, s, e, n):
 def events_point_within():
     q = f"""
         SELECT
-            h.[skredType],
-            h.[skredTidspunkt],
-            h.[noySkredTidspunkt],
-            h.[registrertDato],
-            h.[registrertAv],
-            h.[regStatus],
-            h.[skredID],
-            h.[SHAPE].STAsBinary() as geom
-        FROM [skredprod].[skred].[SKREDHENDELSE] AS h
-        WHERE h.[skredTidspunkt] >= ?
-            AND h.[skredTidspunkt] < ?
-            AND h.[registrertAv] = 'Sentinel-1'
-            AND h.[regStatus] != 'Slettet'
-        ORDER BY h.[skredTidspunkt] DESC
+            h.skredID,
+            h.skredTidspunkt,
+            h.noySkredTidspunkt,
+            h.regStatus,
+            h.registrertDato,
+            h.endretDato,
+            h.SHAPE.STAsBinary() AS geom
+        FROM skredprod.skred.SKREDHENDELSE AS h
+        WHERE h.skredTidspunkt >= ?
+            AND h.skredTidspunkt < ?
+            AND h.registrertAv = 'Sentinel-1'
+            AND h.regStatus != 'Slettet'
+        ORDER BY h.skredTidspunkt DESC
     """
 
     start, end = date_parse(request)
@@ -132,21 +129,20 @@ def events_point_within():
 def events_point(w, s, e, n):
     q = f"""
         SELECT
-            h.[skredType],
-            h.[skredTidspunkt],
-            h.[noySkredTidspunkt],
-            h.[registrertDato],
-            h.[registrertAv],
-            h.[regStatus],
-            h.[skredID],
-            h.[SHAPE].STAsBinary() as geom
-        FROM [skredprod].[skred].[SKREDHENDELSE] AS h
-        WHERE h.[SHAPE].STIntersects(geometry::STPolyFromText(?, ?)) = 1
-            AND h.[skredTidspunkt] >= ?
-            AND h.[skredTidspunkt] < ?
-            AND h.[registrertAv] = 'Sentinel-1'
-            AND h.[regStatus] != 'Slettet'
-        ORDER BY h.[skredTidspunkt] DESC
+            h.skredID,
+            h.skredTidspunkt,
+            h.noySkredTidspunkt,
+            h.regStatus,
+            h.registrertDato,
+            h.endretDato,
+            h.SHAPE.STAsBinary() AS geom
+        FROM skredprod.skred.SKREDHENDELSE AS h
+        WHERE h.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
+            AND h.skredTidspunkt >= ?
+            AND h.skredTidspunkt < ?
+            AND h.registrertAv = 'Sentinel-1'
+            AND h.regStatus != 'Slettet'
+        ORDER BY h.skredTidspunkt DESC
     """
 
     start, end = date_parse(request)
