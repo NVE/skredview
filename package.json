@@ -18,10 +18,10 @@
   },
   "homepage": "https://github.com/widforss/skredview#readme",
   "dependencies": {
-    "@turf/boolean-within": "^6.0.1",
-    "@turf/helpers": "^6.1.4",
+    "@turf/turf": "^5.1.6",
     "@types/ol": "^6.3.1",
     "@types/proj4": "^2.5.0",
+    "highcharts": "^8.1.2",
     "ol": "^6.3.1",
     "proj4": "^2.6.2",
     "ts-loader": "^7.0.5",

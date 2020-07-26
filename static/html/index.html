@@ -8,50 +8,67 @@
     <meta name="description" content="Visualises satellite-borne remote avalanche detections in Norway ">
     <meta name="author" content="NVE">
 
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap"
+          rel="stylesheet">
     <link rel="stylesheet" href="static/css/ol.css">
+    <link rel="stylesheet" href="static/css/ol-popup.css">
     <link rel="stylesheet" href="static/css/styles.css">
 </head>
 
 <body>
     <div id="frame">
         <div id="controls">
-            <h1>SatSkred Explorer</h1>
-            <div class="bottom-margin">
-                Date range:
-                <input type="date" id="date-start" name="start" min="2015-01-01">
-                –
-                <input type="date" id="date-end" name="end" max="2025-01-01">
-            </div>
-            <div class="bottom-margin">
-                Region:
-                <select id="region-selector" name="region" id="region">
-                    <option value=""></option>
-                </select>
-            </div>
-            <div id="legend" class="bottom-margin">
-                <h2>Legend</h2>
-                <div>
-                    <svg height="14" width="14">
-                        <circle id="new-circle" cx="7" cy="7" r="6"/>
-                    </svg>
-                    Temporal precision ≤ 24 h
+            <div id="controls-inner">
+                <h1>SatSkred Explorer</h1>
+                <div class="bottom-margin">
+                    Date range:
+                    <input type="date" id="date-start" name="start" min="2015-01-01">
+                    –
+                    <input type="date" id="date-end" name="end" max="2025-01-01">
                 </div>
-                <div>
-                    <svg height="14" width="14">
-                        <circle id="medium-circle" cx="7" cy="7" r="6"/>
-                    </svg>
-                    Temporal precision ≤ 48 h
+                <div class="bottom-margin">
+                    Region:
+                    <select id="region-selector" name="region" id="region">
+                        <option value=""></option>
+                    </select>
                 </div>
-                <div>
-                    <svg height="14" width="14">
-                        <circle id="old-circle" cx="7" cy="7" r="6"/>
-                    </svg>
-                    Temporal precision > 48 h
+                <div id="legend" class="bottom-margin">
+                    <h2>Legend</h2>
+                    <div>
+                        <svg height="14" width="14">
+                            <circle id="new-circle" cx="7" cy="7" r="6" stroke-width="1"/>
+                        </svg>
+                        Temporal precision < 24 h
+                    </div>
+                    <div>
+                        <svg height="14" width="14">
+                            <circle id="medium-circle" cx="7" cy="7" r="6" stroke-width="1"/>
+                        </svg>
+                        Temporal precision ≤ 48 h
+                    </div>
+                    <div>
+                        <svg height="14" width="14">
+                            <circle id="old-circle" cx="7" cy="7" r="6" stroke-width="1"/>
+                        </svg>
+                        Temporal precision > 48 h
+                    </div>
                 </div>
             </div>
         </div>
-        <div id="map"></div>
-        <!--<div id="statistics"></div>-->
+        <div id="frame-inner">
+            <div id="map"></div>
+            <div id="popup" class="ol-popup">
+              <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+              <div id="popup-content"></div>
+            </div>
+            <div id="statistics">
+                <div id="statistics-timeline" class="statistics-chart"></div>
+                <div id="statistics-inner">
+                    <div id="statistics-size" class="statistics-chart"></div>
+                    <div id="statistics-exposition" class="statistics-chart"></div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="static/js/skredview.js"></script>
 </body>

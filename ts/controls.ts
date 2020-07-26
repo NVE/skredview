@@ -1,5 +1,7 @@
 import * as Cookie from "./cookie";
-import {OlObjects, COLORS} from "./ol";
+import {getDate} from "./date";
+import {COLORS, VECTOR_OPACITY} from "./color";
+import {OlObjects} from "./ol";
 
 interface Controls {
     dateStart: HTMLInputElement,
@@ -14,43 +16,49 @@ function initControls(): Controls {
     let dateEnd = document.getElementById('date-end') as HTMLInputElement;
     let today = new Date();
     let nextDay = new Date(today.getTime() + 1000 * 3600 * 24);
-    dateStart.value = storedDateStart ? storedDateStart : getDate_(today);
-    dateEnd.value = storedDateEnd ? storedDateEnd : getDate_(nextDay);
+    dateStart.value = storedDateStart ? storedDateStart : getDate(today);
+    dateEnd.value = storedDateEnd ? storedDateEnd : getDate(nextDay);
     let newMin = new Date(new Date(dateStart.value).getTime() + 1000 * 3600 * 24);
-    dateStart.max = getDate_(nextDay);
-    dateEnd.min = getDate_(newMin);
+    dateStart.max = getDate(today);
+    dateEnd.max = getDate(nextDay);
+    dateEnd.min = getDate(newMin);
 
     let newCircle = document.getElementById('new-circle') as Element as SVGCircleElement;
     let mediumCircle = document.getElementById('medium-circle') as Element as SVGCircleElement;
     let oldCircle = document.getElementById('old-circle') as Element as SVGCircleElement;
-    newCircle.style.fill = COLORS.NEW;
-    mediumCircle.style.fill = COLORS.MEDIUM;
-    oldCircle.style.fill = COLORS.OLD;
+    newCircle.style.fill = COLORS.PRECISION_NEW;
+    mediumCircle.style.fill = COLORS.PRECISION_MEDIUM;
+    oldCircle.style.fill = COLORS.PRECISION_OLD;
+    newCircle.style.stroke = COLORS.BORDER_EVENT;
+    mediumCircle.style.stroke = COLORS.BORDER_EVENT;
+    oldCircle.style.stroke = COLORS.BORDER_EVENT;
+    newCircle.style.opacity = VECTOR_OPACITY.toString();
+    mediumCircle.style.opacity = VECTOR_OPACITY.toString();
+    oldCircle.style.opacity = VECTOR_OPACITY.toString();
 
     let regionSelector = document.getElementById("region-selector") as HTMLSelectElement;
 
     return {dateStart, dateEnd, regionSelector};
 }
 
-function adjustRangeStart(currentDateStart: Date, currentDateEnd: Date): [Date, Date] {
+function adjustRangeStart(oldDateStart: Date, oldDateEnd: Date): [Date, Date] {
     let dateStart = document.getElementById('date-start') as HTMLInputElement;
     let dateEnd = document.getElementById('date-end') as HTMLInputElement;
     let dateStartValue = new Date(dateStart.value);
-    let dateEndValue = new Date(dateEnd.value);
-    let endDay = new Date(dateStartValue.getTime() + currentDateEnd.getTime() - currentDateStart.getTime());
+    let endDay = new Date(dateStartValue.getTime() + oldDateEnd.getTime() - oldDateStart.getTime());
     let newMin = new Date(dateStartValue.getTime() + 1000 * 3600 * 24);
-    dateEnd.value = getDate_(endDay);
-    dateEnd.min = getDate_(newMin);
-    Cookie.setCookie("dateStart", getDate_(dateStartValue), Cookie.TTL);
-    Cookie.setCookie("dateEnd", getDate_(dateEndValue), Cookie.TTL);
-    return [dateStartValue, new Date(getDate_(endDay))];
+    dateEnd.value = getDate(endDay);
+    dateEnd.min = getDate(newMin);
+    Cookie.setCookie("dateStart", getDate(dateStartValue), Cookie.TTL);
+    Cookie.setCookie("dateEnd", getDate(endDay), Cookie.TTL);
+    return [dateStartValue, new Date(getDate(endDay))];
 }
 
-function adjustRangeEnd(currentDateStart: Date): [Date, Date] {
+function adjustRangeEnd(oldDateStart: Date): [Date, Date] {
     let dateEnd = document.getElementById('date-end') as HTMLInputElement;
     let dateEndValue = new Date(dateEnd.value);
-    Cookie.setCookie("dateEnd", getDate_(dateEndValue), Cookie.TTL);
-    return [currentDateStart, new Date(dateEnd.value as string)];
+    Cookie.setCookie("dateEnd", getDate(dateEndValue), Cookie.TTL);
+    return [oldDateStart, new Date(dateEnd.value as string)];
 }
 
 function addRegion( name: string, controls: Controls): void {
@@ -72,8 +80,4 @@ function adjustRegion(ol: OlObjects, controls: Controls): void {
     Cookie.setCookie("region", name, Cookie.TTL);
 }
 
-function getDate_(date: Date): string {
-    return date.toISOString().substring(0, 10);
-}
-
-export {Controls, initControls, adjustRangeStart, adjustRangeEnd, addRegion, adjustRegion};
+export {Controls, initControls, adjustRangeStart, adjustRangeEnd, addRegion, adjustRegion, getDate};
