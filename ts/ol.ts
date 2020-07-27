@@ -1,4 +1,4 @@
-import {Controls} from "./controls";
+import {addRegion, Controls} from "./controls";
 import {dateRange, getDate} from "./date";
 import {get} from "./network";
 import * as Cookie from "./cookie";
@@ -52,7 +52,7 @@ function initMap(controls: Controls): OlObjects {
     let backoff_counter: Record<string, number> = {};
 
     let baseLayer = Layer.createBaseLayer(backoff_counter);
-    let regionLayer = Layer.createRegionLayer(regions, controls);
+    let regionLayer = Layer.createRegionLayer();
     let selectedRegionLayer = Layer.createSelectedRegionLayer();
     let eventLayer = Layer.createEventLayer();
     let selectedEventLayer = Layer.createEventLayer();
@@ -96,6 +96,26 @@ function initMap(controls: Controls): OlObjects {
     let [overlay, content] = Popup.createPopupOverlay(ol);
     ol.map = Layer.createMap(layers, [overlay]);
     ol.popupOverlay = [overlay, content];
+
+    let url = '/static/geojson/areas.json';
+    get(url, [null], responseText => {
+        let json: GeoJSONFeatureCollection = JSON.parse(responseText);
+        let features = new GeoJSON({}).readFeatures(json);
+        let regionIdName: [number, string][] = [];
+        features.forEach((feature) => {
+            let id = feature.get("omradeID");
+            let name = feature.get("omradeNavn");
+            regions[id] = feature;
+            regionIdName.push([id, name]);
+        });
+        regionIdName = regionIdName.sort((tup1, tup2) => {
+            return tup1[1].localeCompare(tup2[1], 'no-NO');
+        });
+        regionIdName.forEach(([id, name]) => {
+            addRegion(id, name, controls, ol);
+        });
+        regionLayer.getSource().addFeatures(features);
+    });
 
     updateMapState(ol);
 
@@ -269,7 +289,7 @@ function selectRegion(ol: OlObjects, controls: Controls): void {
 }
 
 function panToRegion(controls: Controls, ol: OlObjects): void {
-    let name = controls.regionSelector.value;;
+    let name = controls.regionSelector.value;
     if (name) {
         let geometry = ol.regions[name].getGeometry();
         let viewExtent: Extent = ol.map.getView().calculateExtent();
