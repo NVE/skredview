@@ -1,4 +1,5 @@
 from flask import Flask, request
+from waitress import serve
 import geopandas as gpd
 import pyodbc
 import datetime as dt
@@ -7,13 +8,15 @@ import contextlib
 
 EPSG = 32633
 
+
 def pool(connection_string):
-    intital = 5
+    intital = 20
     cursors = []
     local_pool = multiprocessing.Queue()
     for _ in range(0, intital):
         cursors.append(pyodbc.connect(connection_string))
     n = multiprocessing.Value('i', intital - 1)
+
     @contextlib.contextmanager
     def pooled():
         try:
@@ -25,7 +28,9 @@ def pool(connection_string):
                 cursors.append(pyodbc.connect(connection_string))
         yield cursors[idx]
         local_pool.put(idx)
+
     return pooled
+
 
 app = Flask(__name__, static_folder='../static', static_url_path='/static')
 sql = pool('Driver={SQL Server};'
@@ -33,9 +38,11 @@ sql = pool('Driver={SQL Server};'
            'Database=skredprod;'
            'Trusted_Connection=yes;')
 
+
 @app.route('/')
 def root():
     return app.send_static_file('html/index.html')
+
 
 @app.route('/api/events/polygons/')
 def events():
@@ -103,6 +110,7 @@ def events_within(w, s, e, n):
     bbox = f'POLYGON (({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))'
     return geo_query(q, [bbox, EPSG, start, end])
 
+
 @app.route('/api/events/points/')
 def events_point_within():
     q = f"""
@@ -124,6 +132,7 @@ def events_point_within():
 
     start, end = date_parse(request)
     return geo_query(q, [start, end])
+
 
 @app.route('/api/events/points/within/<w>/<s>/<e>/<n>/')
 def events_point(w, s, e, n):
@@ -150,6 +159,7 @@ def events_point(w, s, e, n):
     bbox = f'POLYGON (({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))'
     return geo_query(q, [bbox, EPSG, start, end])
 
+
 def date_parse(request):
     start_date = request.args.get('start')
     start = dt.date.fromisoformat(request.args['start']).isoformat() if start_date else '2000-01-01'
@@ -162,8 +172,8 @@ def date_parse(request):
         end = '2100-01-01'
     return start, end
 
-def geo_query(q, params):
 
+def geo_query(q, params):
     with sql() as cursor:
         gdf = gpd.GeoDataFrame.from_postgis(q, cursor, crs=EPSG, params=params)
         response = app.response_class(
@@ -173,5 +183,6 @@ def geo_query(q, params):
         )
         return response
 
+
 if __name__ == '__main__':
-    app.run()
+    serve(app, host='0.0.0.0', port=80, threads=20)
