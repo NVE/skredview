@@ -12,12 +12,21 @@ interface Controls {
 function initControls(): Controls {
     let storedDateStart = Cookie.getCookie("dateStart");
     let storedDateEnd = Cookie.getCookie("dateEnd");
+    let urlDateFrom = new Date(new URL(window.location.href).searchParams.get("dateFrom"));
+    let urlDateTo = new Date(new URL(window.location.href).searchParams.get("dateTo"));
     let dateStart = document.getElementById('date-start') as HTMLInputElement;
     let dateEnd = document.getElementById('date-end') as HTMLInputElement;
     let today = new Date();
     let nextDay = new Date(today.getTime() + 1000 * 3600 * 24);
-    dateStart.value = storedDateStart ? storedDateStart : getDate(today);
-    dateEnd.value = storedDateEnd ? storedDateEnd : getDate(nextDay);
+    if (!isNaN(urlDateFrom.getTime()) && !isNaN(urlDateTo.getTime()) && urlDateFrom < urlDateTo) {
+        dateStart.value = getDate(urlDateFrom);
+        dateEnd.value = getDate(urlDateTo);
+        Cookie.setCookie("dateStart", dateStart.value, Cookie.TTL);
+        Cookie.setCookie("dateEnd", dateEnd.value, Cookie.TTL);
+    } else {
+        dateStart.value = storedDateStart ? storedDateStart : getDate(today);
+        dateEnd.value = storedDateEnd ? storedDateEnd : getDate(nextDay);
+    }
     let newMin = new Date(new Date(dateStart.value).getTime() + 1000 * 3600 * 24);
     dateStart.max = getDate(today);
     dateEnd.max = getDate(nextDay);
@@ -61,22 +70,28 @@ function adjustRangeEnd(oldDateStart: Date): [Date, Date] {
     return [oldDateStart, new Date(dateEnd.value as string)];
 }
 
-function addRegion( name: string, controls: Controls): void {
-
+function addRegion(id: number, name: string, controls: Controls, ol: OlObjects): void {
     let option = document.createElement("option");
-    option.value = name;
+    let idString = id.toString();
+    option.value = idString;
     option.innerText = name;
     controls.regionSelector.appendChild(option);
 
     let storedRegion = Cookie.getCookie("region");
-    if (storedRegion == name) {
-        controls.regionSelector.value = storedRegion;
+    let urlRegion = new URL(window.location.href).searchParams.get("regionId");
+    if (urlRegion == idString) {
+        ol.map.getView().fit(ol.regions[id].getGeometry().getExtent());
+        controls.regionSelector.value = urlRegion;
+        controls.regionSelector.dispatchEvent(new Event("input"));
+    } else if (storedRegion == name) {
+        controls.regionSelector.value = idString;
         controls.regionSelector.dispatchEvent(new Event("input"));
     }
 }
 
 function adjustRegion(ol: OlObjects, controls: Controls): void {
-    let name = controls.regionSelector.value;
+    let option = controls.regionSelector.options[controls.regionSelector.selectedIndex];
+    let name = option ? option.innerText : "";
     Cookie.setCookie("region", name, Cookie.TTL);
 }
 

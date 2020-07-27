@@ -146,8 +146,8 @@ function createBaseLayer(backoff_counter: Record<string, number>): TileLayer {
     return baseLayer;
 }
 
-function createRegionLayer(regions: Record<string, Feature>, controls: Controls): VectorImageLayer {
-    let regionLayer = new VectorImageLayer({
+function createRegionLayer(): VectorImageLayer {
+    return new VectorImageLayer({
         source: new Vector({
             attributions: ATTR_NVE,
             wrapX: false,
@@ -164,26 +164,6 @@ function createRegionLayer(regions: Record<string, Feature>, controls: Controls)
         opacity: 0.5,
         zIndex: 2,
     });
-    let url = '/static/geojson/areas.json';
-    get(url, [null], responseText => {
-        let json: GeoJSONFeatureCollection = JSON.parse(responseText);
-        let features = new GeoJSON({
-            dataProjection: 'EPSG:4326',
-            featureProjection: PROJECTION,
-        }).readFeatures(json);
-        features.forEach((feature) => {
-            let name = feature.get("label");
-            regions[name] = feature;
-        });
-        let regionNames = Object.keys(regions).sort((s1, s2) => {
-            return s1.localeCompare(s2, 'no-NO');
-        });
-        regionNames.forEach((regionName) => {
-            addRegion(regionName, controls);
-        });
-        regionLayer.getSource().addFeatures(features);
-    });
-    return regionLayer;
 }
 
 function createSelectedRegionLayer(): VectorImageLayer {

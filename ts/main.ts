@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 controls.regionSelector.dispatchEvent(new Event("input"));
                 handled = true;
             } else if (!handled && layer == ol.regionLayer) {
-                controls.regionSelector.value = feature.get("label");
+                controls.regionSelector.value = feature.get("omradeID");
                 controls.regionSelector.dispatchEvent(new Event("input"));
                 handled = true;
             }
