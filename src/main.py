@@ -1,5 +1,7 @@
 from flask import Flask, request
 from waitress import serve
+import time
+import pandas as pd
 import geopandas as gpd
 import pyodbc
 import datetime as dt
@@ -11,22 +13,26 @@ EPSG = 32633
 
 def pool(connection_string):
     intital = 20
-    cursors = []
+    connections = []
     local_pool = multiprocessing.Queue()
     for _ in range(0, intital):
-        cursors.append(pyodbc.connect(connection_string))
+        connections.append(pyodbc.connect(connection_string))
     n = multiprocessing.Value('i', intital - 1)
 
     @contextlib.contextmanager
-    def pooled():
+    def pooled(reinit=False):
         try:
             idx = local_pool.get(False)
+            if reinit:
+                connections[idx].close()
+                connections[idx] = pyodbc.connect(connection_string)
         except multiprocessing.queues.Empty:
             with n.get_lock():
                 n.value += 1
                 idx = n.value
-                cursors.append(pyodbc.connect(connection_string))
-        yield cursors[idx]
+                connections.append(None)
+            connections[idx] = pyodbc.connect(connection_string)
+        yield connections[idx]
         local_pool.put(idx)
 
     return pooled
@@ -173,15 +179,26 @@ def date_parse(request):
     return start, end
 
 
-def geo_query(q, params):
-    with sql() as cursor:
-        gdf = gpd.GeoDataFrame.from_postgis(q, cursor, crs=EPSG, params=params)
-        response = app.response_class(
-            response=gdf.to_json(),
-            status=200,
-            mimetype='application/json'
-        )
-        return response
+def geo_query(q, params, reinit=False, delay=None):
+    try:
+        if delay:
+            time.sleep(delay)
+        with sql(reinit) as connection:
+            gdf = gpd.GeoDataFrame.from_postgis(q, connection, crs=EPSG, params=params)
+            response = app.response_class(
+                response=gdf.to_json(),
+                status=200,
+                mimetype='application/json'
+            )
+            return response
+    except pd.io.sql.DatabaseError:
+        if delay is None:
+            delay = 0
+        elif delay == 0:
+            delay = 1
+        elif delay < 64:
+            delay *= 2
+        return geo_query(q, params, reinit=True, delay=delay)
 
 
 if __name__ == '__main__':
