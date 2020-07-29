@@ -1,7 +1,7 @@
 import * as Highcharts from 'highcharts';
 import * as HighchartsMore from "highcharts/highcharts-more";
-import {Controls, getDate} from "./controls";
-import {DATE_FORMAT, dateRange} from "./date";
+import {Controls} from "./controls";
+import {dateRange} from "./date";
 import {COLORS, VECTOR_OPACITY} from "./color";
 import {OlObjects, getPrecision} from "./ol";
 import Feature from "ol/Feature";
@@ -20,6 +20,11 @@ const D_SIZE = "Debris area";
 const A_TIME = "Avalanche Timeline";
 const EXPOSITION = "Debris Exposition";
 
+/**
+ * Create all the charts available in the page. Initializes all y-values to 0.
+ * @param controls: Controls
+ * @return Charts
+ */
 function initCharts(controls: Controls): Charts {
     let dates = dateRange(new Date(controls.dateStart.value), new Date(controls.dateEnd.value));
     let precBorderColor = new Highcharts.Color(COLORS.BORDER_EVENT.toString()).setOpacity(VECTOR_OPACITY).get();
@@ -348,6 +353,12 @@ function initCharts(controls: Controls): Charts {
     };
 }
 
+/**
+ * Add features to the size part of the timeline. Make sure to add features not already present in the chart.
+ * @param features: Feature[] - Features to add to the timeline statistics.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
 function calculateTimelineEvent(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
         let date = new Date(feature.get('skredTidspunkt'));
@@ -373,7 +384,12 @@ function calculateTimelineEvent(features: Feature[], charts: Charts, controls: C
     charts.timeline.redraw();
 }
 
-
+/**
+ * Add features to the precision part of the timeline. Make sure to add features not already present in the chart.
+ * @param features: Feature[] - Features to add to the timeline statistics.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
 function calculateTimelineCluster(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
         let date = new Date(feature.get('skredTidspunkt'));
@@ -397,6 +413,12 @@ function calculateTimelineCluster(features: Feature[], charts: Charts, controls:
     charts.timeline.redraw();
 }
 
+/**
+ * Add features to the size chart. Make sure to add features not already present in the chart.
+ * @param features: Feature[] - Features to add to the size chart.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
 function calculateSize(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
         let area = feature.get("area");
@@ -420,6 +442,12 @@ function calculateSize(features: Feature[], charts: Charts, controls: Controls) 
     charts.size.redraw();
 }
 
+/**
+ * Add features to the exposition chart. Make sure to add features not already present in the chart.
+ * @param features: Feature[] - Features to add to the exposition chart.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
 function calculateExposition(features: Feature[], charts: Charts, controls: Controls) {
     let series = charts.exposition.series[0];
     features.forEach((feature) => {
@@ -435,6 +463,11 @@ function calculateExposition(features: Feature[], charts: Charts, controls: Cont
     charts.exposition.yAxis[0].setExtremes(0, max + 1);
 }
 
+/**
+ * Remove all statistics from all charts. I.e., set all y-values to 0.
+ * @param redraw: boolean - Whether to redraw the charts.
+ * @param charts: Charts
+ */
 function clearStatistics(redraw: boolean, charts: Charts) {
     charts.timeline.series.forEach((series) => {
         series.setData(emptyArray_(series.data.length, 0), redraw);
@@ -443,16 +476,22 @@ function clearStatistics(redraw: boolean, charts: Charts) {
     clearExposition(redraw, charts);
 }
 
+/**
+ * Only remove the data from the timeline that is outside the selected daterange. Keep everything else, but shift it.
+ * @param charts: CHarts
+ * @param controls: Controls
+ * @param ol: OlObjects
+ */
 function updateTimelineDates(charts: Charts, controls: Controls, ol: OlObjects) {
     let dateStart = new Date(controls.dateStart.value as string);
     let dateEnd = new Date(controls.dateEnd.value as string);
     let oldDateStart = new Date(charts.timeline.xAxis[0].categories[0]);
 
-    charts.timeline.series.forEach((series: Highcharts.Series, i) => {
+    charts.timeline.series.forEach((series: Highcharts.Series) => {
         let size = Math.round((dateEnd.getTime() - dateStart.getTime()) / (1000 * 3600 * 24));
         let newData = emptyArray_(size, 0);
 
-        for (let dateString in ol.clustersByDate)  {
+        for (let dateString of Object.keys(ol.clustersByDate))  {
             let storedDate = new Date(dateString);
             if (dateStart <= storedDate && storedDate < dateEnd && oldDateStart <= storedDate) {
                 let oldOffset = Math.round((storedDate.getTime() - oldDateStart.getTime()) / (1000 * 3600 * 24));
@@ -469,20 +508,30 @@ function updateTimelineDates(charts: Charts, controls: Controls, ol: OlObjects) 
     charts.timeline.xAxis[0].setCategories(range, true);
 }
 
+/**
+ * Remove all statistics from the size chart. I.e., set all y-values to 0.
+ * @param redraw: boolean - Whether to redraw the chart.
+ * @param charts: Charts
+ */
 function clearSize(redraw: boolean, charts: Charts) {
     charts.size.series.forEach((series) => {
         series.setData(emptyArray_(SIZE_CATEGORIES.length, 0), redraw);
     })
 }
 
+/**
+ * Remove all statistics from the exposition chart. I.e., set all y-values to 0.
+ * @param redraw: boolean - Whether to redraw the chart.
+ * @param charts: Charts
+ */
 function clearExposition(redraw: boolean, charts: Charts) {
     charts.exposition.series.forEach((series) => {
         series.setData(emptyArray_(EXPOSITIONS.length, 0), redraw);
-    })
+    });
     charts.exposition.yAxis[0].setExtremes(0, 1);
 }
 
-function emptyArray_(size: number, value: number) {
+function emptyArray_(size: number, value: number): Array<number> {
     return Array.apply(null, new Array(size)).map(Number.prototype.valueOf, value);
 }
 

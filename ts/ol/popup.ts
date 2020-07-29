@@ -70,7 +70,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     let minSlope = event.get("minHelningUtlopsomr_gr");
     let maxSlope = event.get("maksHelningUtlopsomr_gr");
 
-    let aspectIdx = EXPOSITIONS_NO.indexOf(aspect)
+    let aspectIdx = EXPOSITIONS_NO.indexOf(aspect);
 
     if (avalId) htmlText.push(`${title("Avalanche ID:")} ${avalId}`);
     if (avalDate) {
@@ -79,7 +79,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
         htmlText.push(`${title("Triggered:")} ${dateString}`);
     }
     if (aspectIdx != -1) htmlText.push(`${title("Exposition:")} ${EXPOSITIONS[aspectIdx]}`);
-    if (area) htmlText.push(`${title("Area:")} ${Math.round(area)}&nbspm²`)
+    if (area) htmlText.push(`${title("Area:")} ${Math.round(area)}&nbspm²`);
     if (stopHeight) {
         let height = `${stopHeight}&nbspm.a.s.l.`;
         if (precStopHeight) height = `${height} ± ${precStopHeight.slice(0, -1)}&nbspm.`;
@@ -106,8 +106,11 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     clipboardRef.innerHTML = "Click to copy feature.";
     clipboardRef.onclick = () => {
         let jsonFeature = new GeoJSON().writeFeatureObject(event);
-        navigator.clipboard.writeText(JSON.stringify(jsonFeature, null, 4));
-        clipboardRef.innerHTML = "Feature copied to clipboard!";
+        navigator.clipboard.writeText(JSON.stringify(jsonFeature, null, 4)).then(() => {
+            clipboardRef.innerHTML = "Feature copied to clipboard!";
+        }, () => {
+            clipboardRef.innerHTML = "Failed to copy to clipboard!";
+        });
         return false;
     };
     container.appendChild(clipboardRef);

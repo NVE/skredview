@@ -14,10 +14,21 @@ const TIME_FORMAT = {
     second: '2-digit',
 };
 
+/**
+ * Transforms Date to datestring of format yyyy-mm-dd
+ * @param date: Date
+ * @return string - yyyy-mm-dd
+ */
 function getDate(date: Date): string {
     return date.toLocaleString('sv-SE', DATE_FORMAT);
 }
 
+/**
+ * Generates an array of datestrings given the start and end.
+ * @param start: Date - The start of the range, inclusive.
+ * @param end: Date - The end of the range, exclusive.
+ * @return string[]
+ */
 function dateRange(start: Date, end: Date): string[] {
     let range = [start];
     let tail: (range: Date[]) => Date = (range) => range.slice(-1)[0];
