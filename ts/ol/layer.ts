@@ -1,8 +1,6 @@
 import {COLORS, VECTOR_OPACITY} from "../color";
 import {getPrecision} from "../ol";
-import {addRegion, Controls} from "../controls";
 import * as Cookie from "../cookie";
-import {get} from "../network";
 import Layer from "ol/layer/Layer";
 import Overlay from "ol/Overlay";
 import Map from "ol/Map";
@@ -14,21 +12,19 @@ import TileLayer from "ol/layer/Tile";
 import WMTS from "ol/source/WMTS";
 import WMTSTileGrid from "ol/tilegrid/WMTS";
 import {TileSourceEvent} from "ol/source/Tile";
-import Feature from "ol/Feature";
 import VectorImageLayer from "ol/layer/Vector";
 import Vector from "ol/source/Vector";
 import Style from "ol/style/Style";
 import Fill from "ol/style/Fill";
 import Stroke from "ol/style/Stroke";
-import GeoJSON, {GeoJSONFeatureCollection} from "ol/format/GeoJSON";
 import Cluster from "ol/source/Cluster";
 import CircleStyle from "ol/style/Circle";
 import ImageStyle from "ol/style/Image";
 import Text from "ol/style/Text";
-import proj4 from "proj4";
-import {register} from "ol/proj/proj4";
 import Tile from "ol/Tile";
 import VectorSource from "ol/source/Vector";
+import proj4 from "proj4";
+import {register} from "ol/proj/proj4";
 
 const EXP_TIMEOUT = 500;
 const ATTR_NVE = [

@@ -1,5 +1,11 @@
+/**
+ * Runs a GET XHR, returning the respons text to a callback.
+ * @param url: string
+ * @param old_request: [XMLHttpRequest] - Old request of same type to invalidate. Encapsuled to enable mutation.
+ * @param callback: (responseText: string) => void
+ */
 function get(url: string, old_request: [XMLHttpRequest | null], callback: (responseText: string) => void): void {
-    if (old_request[0]) old_request[0].abort()
+    if (old_request[0]) old_request[0].abort();
     let request = new XMLHttpRequest();
     request.open("GET", url, true);
     request.onreadystatechange = () => {

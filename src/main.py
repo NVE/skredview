@@ -10,8 +10,12 @@ import contextlib
 
 EPSG = 32633
 
-
 def pool(connection_string):
+    """Database pool for a multi-threaded server.
+
+    :param connection_string: pyodbc connection string.
+    :return: SQL connection generator
+    """
     intital = 20
     connections = []
     local_pool = multiprocessing.Queue()
@@ -47,11 +51,18 @@ sql = pool('Driver={SQL Server};'
 
 @app.route('/')
 def root():
+    """
+    :return: Main page.
+    """
     return app.send_static_file('html/index.html')
 
 
 @app.route('/api/events/polygons/')
 def events():
+    """ Return full avalanche events with polygon geometries and avalanche parameters.
+
+    :return: GeoJSONFeatureCollection<Polygon>
+    """
     q = f"""
         SELECT
             h.skredID,
@@ -84,6 +95,14 @@ def events():
 
 @app.route('/api/events/polygons/within/<w>/<s>/<e>/<n>/')
 def events_within(w, s, e, n):
+    """ Return full avalanche events with polygon geometries and avalanche parameters Filtered by BBox.
+
+    :param w: Western boundary
+    :param s: Southern boundary
+    :param e: Eastern boundary
+    :param n: Northen boundary
+    :return: GeoJSONFeatureCollection<Polygon>
+    """
     q = f"""
         SELECT
             h.skredID,
@@ -119,6 +138,10 @@ def events_within(w, s, e, n):
 
 @app.route('/api/events/points/')
 def events_point_within():
+    """ Return simpler avalanche events, with point geometries.
+
+    :return: GeoJSONFeatureCollection<Polygon>
+    """
     q = f"""
         SELECT
             h.skredID,
@@ -142,6 +165,14 @@ def events_point_within():
 
 @app.route('/api/events/points/within/<w>/<s>/<e>/<n>/')
 def events_point(w, s, e, n):
+    """ Return simpler avalanche events, with point geometries. Filtered by BBox.
+
+    :param w: Western boundary
+    :param s: Southern boundary
+    :param e: Eastern boundary
+    :param n: Northen boundary
+    :return: GeoJSONFeatureCollection<Polygon>
+    """
     q = f"""
         SELECT
             h.skredID,
@@ -167,6 +198,11 @@ def events_point(w, s, e, n):
 
 
 def date_parse(request):
+    """ Determine if date parameters are present in the GET parameters of the request.
+
+    :param request: Flask request object.
+    :return: (string, string): Datestring of the formae yyyy-mm-dd
+    """
     start_date = request.args.get('start')
     start = dt.date.fromisoformat(request.args['start']).isoformat() if start_date else '2000-01-01'
     end_date = request.args.get('end')
@@ -180,6 +216,14 @@ def date_parse(request):
 
 
 def geo_query(q, params, reinit=False, delay=None):
+    """ Make a query to the database, transform it into a FeatureCollection and make it into a Flask response.
+
+    :param q: Database prepared statement
+    :param params: Prepared statement parameters
+    :param reinit: Drop existing database connection and reconnect. Only used in recursive calls.
+    :param delay: Delay query by specified amount of seconds. Only used in recursive calls.
+    :return: Flask resonse
+    """
     try:
         if delay:
             time.sleep(delay)

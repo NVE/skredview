@@ -17,32 +17,65 @@ import * as turf from '@turf/turf';
 import Polygon from "ol/geom/Polygon";
 
 interface OlObjects {
+    // Ol Map object
     map: Map,
+
+    // Record of avalanche polygons displayed on the map. eventsByDate['yyyy-mm-dd'][uuid]
     eventsByDate: Record<string, Record<string, Feature>>,
+    // Record of avalanche point geometries displayed on the map. clustersByDate['yyyy-mm-dd'][uuid]
     clustersByDate: Record<string, Record<string, Feature>>,
+
+    // Record cache of all avalanche polygons ever seen. eventStoredsByDate['yyyy-mm-dd'][uuid]
     eventsStoredByDate: Record<string, Record<string, Feature>>,
+    // Record cache of all point geometries ever seen. clustersStoredsByDate['yyyy-mm-dd'][uuid]
     clustersStoredByDate: Record<string, Record<string, Feature>>,
+
+    // Indicates if the event layer has started loading.
     eventsLoaded: [boolean],
+    // Indicates if the event layer has loaded completely.
     eventsLoadStart: [boolean],
+
+    // Indicates if the cluster layer has started loading.
     clusterLoaded: [boolean],
+    // Indicates if the cluster layer has loaded completelyz
     clusterLoadStart: [boolean],
+
+    // XHR used to load the event layer within frame.
     events_part_req: [XMLHttpRequest | null],
+    // XHR used to load the event layer completely.
     events_all_req: [XMLHttpRequest | null],
+    // XHR used to load the cluster layer within frame.
     cluster_part_req: [XMLHttpRequest | null],
+    // XHR used to load the cluster layer completely.
     cluster_all_req: [XMLHttpRequest | null],
+
+    // Keeps track of the number of times basemap tiles has failed to load.
     backoff_counter: Record<string, number>,
-    regions: Record<string, Feature>,
+
+    // Map of regions by their numerical IDs.
+    regions: Record<number, Feature>,
+
     baseLayer: TileLayer,
     regionLayer: VectorImageLayer,
+    // Layer containing currently selected region.
     selectedRegionLayer: VectorImageLayer,
+    // Avalanche polygon layer.
     eventLayer: VectorImageLayer,
+    // Avalanche cluster layer.
     clusterLayer: VectorImageLayer,
+    // Layer containing the avalanche polygon currently shown in the popup.
     selectedEventLayer: VectorImageLayer,
+    // Popup overlay.
     popupOverlay: [Overlay, HTMLDivElement],
 }
 
 const CLUSTER_THRESHOLD = 11;
 
+/**
+ * Initializes the map.
+ * @param controls: Controls
+ * @return OlObjects
+ */
 function initMap(controls: Controls): OlObjects {
     let eventsByDate: Record<string, Record<string, Feature>> = {};
     let clustersByDate: Record<string, Record<string, Feature>> = {};
@@ -97,31 +130,19 @@ function initMap(controls: Controls): OlObjects {
     ol.map = Layer.createMap(layers, [overlay]);
     ol.popupOverlay = [overlay, content];
 
-    let url = '/static/geojson/areas.json';
-    get(url, [null], responseText => {
-        let json: GeoJSONFeatureCollection = JSON.parse(responseText);
-        let features = new GeoJSON({}).readFeatures(json);
-        let regionIdName: [number, string][] = [];
-        features.forEach((feature) => {
-            let id = feature.get("omradeID");
-            let name = feature.get("omradeNavn");
-            regions[id] = feature;
-            regionIdName.push([id, name]);
-        });
-        regionIdName = regionIdName.sort((tup1, tup2) => {
-            return tup1[1].localeCompare(tup2[1], 'no-NO');
-        });
-        regionIdName.forEach(([id, name]) => {
-            addRegion(id, name, controls, ol);
-        });
-        regionLayer.getSource().addFeatures(features);
-    });
+    getRegions_(controls, ol);
 
     updateMapState(ol);
 
     return ol;
 }
 
+/**
+ * Fill ol.eventLayer with the currently relevant objects, from cache and online resources.
+ * @param ol: OlObjects
+ * @param controls: Controls
+ * @param callback: (filtered: Feature[]) => void - filtered is the features not previously existing in the layer.
+ */
 function getEvents(
     ol: OlObjects,
     controls: Controls,
@@ -155,6 +176,12 @@ function getEvents(
     );
 }
 
+/**
+ * Fill ol.clusterLayer with the currently relevant objects, from cache and online resources.
+ * @param ol: OlObjects
+ * @param controls: Controls
+ * @param callback: (filtered: Feature[]) => void - filtered is the features not previously existing in the layer.
+ */
 function getCluster(
     ol: OlObjects,
     controls: Controls,
@@ -189,6 +216,13 @@ function getCluster(
     );
 }
 
+/**
+ * Remove irrelevant features from ol.eventLayer and ol.clusterLayer.
+ * @param skipDates: boolean - Do not filter features based on the selected daterange
+ * @param skipRegions: boolean - Do not filter features based on the selected region
+ * @param ol: OlObjects
+ * @param controls: Controls
+ */
 function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, controls: Controls): void {
     [
         ol.events_part_req,
@@ -245,18 +279,22 @@ function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, c
         clusterSource.getSource().clear();
         ol.eventLayer.getSource().clear();
         for (let dateString of Object.keys(ol.eventsByDate)) {
-            for (let id in ol.eventsByDate[dateString]) {
+            for (let id of Object.keys(ol.eventsByDate[dateString])) {
                 ol.eventLayer.getSource().addFeature(ol.eventsByDate[dateString][id]);
             }
         }
         for (let dateString of Object.keys(ol.clustersByDate)) {
-            for (let id in ol.clustersByDate[dateString]) {
+            for (let id of Object.keys(ol.clustersByDate[dateString])) {
                 clusterSource.getSource().addFeature(ol.clustersByDate[dateString][id]);
             }
         }
     }
 }
 
+/**
+ * Set layers/popup as un/visible and store location to cookies.
+ * @param ol: OlObjects
+ */
 function updateMapState(ol: OlObjects): void {
     let zoomLevel = ol.map.getView().getZoom();
     let coordinates = ol.map.getView().getCenter();
@@ -281,17 +319,27 @@ function updateMapState(ol: OlObjects): void {
     }
 }
 
+/**
+ * Add selected region to ol.selectedRegionLayer.
+ * @param ol: OlObjects
+ * @param controls: Controls
+ */
 function selectRegion(ol: OlObjects, controls: Controls): void {
     let name = controls.regionSelector.value;
     let source = ol.selectedRegionLayer.getSource();
     source.clear();
-    if (name) source.addFeature(ol.regions[name]);
+    if (name) source.addFeature(ol.regions[parseInt(name, 10)]);
 }
 
+/**
+ * Pan to selected region, IFF it is not in view.
+ * @param controls: Controls
+ * @param ol: OlObjects
+ */
 function panToRegion(controls: Controls, ol: OlObjects): void {
     let name = controls.regionSelector.value;
     if (name) {
-        let geometry = ol.regions[name].getGeometry();
+        let geometry = ol.regions[parseInt(name, 10)].getGeometry();
         let viewExtent: Extent = ol.map.getView().calculateExtent();
         if (!geometry.intersectsExtent(viewExtent)) {
             ol.map.getView().fit(geometry.getExtent(), {duration: 700});
@@ -299,6 +347,11 @@ function panToRegion(controls: Controls, ol: OlObjects): void {
     }
 }
 
+/**
+ * Get precision in hours from a feature.
+ * @param feature: Feature
+ * @return number
+ */
 function getPrecision(feature: FeatureLike): number {
     let intervals: Record<string, number> = {
         'Eksakt': 0,
@@ -348,14 +401,7 @@ function getVector_(
             }
         });
 
-        let filtered = filterArrayByRegions_(newEvents, true, controls, ol);
-        filtered.forEach((feature) => {
-            let dateString = getDate(new Date(feature.get("skredTidspunkt")));
-            if (!(dateString in existMap)) existMap[dateString] = {};
-            existMap[dateString][feature.get("skredID")] = feature;
-        });
-        source.addFeatures(filtered);
-        callback(filtered);
+        filter_(newEvents, source, existMap, controls, ol, callback);
     };
 
     get(part_url, part_req, closure);
@@ -379,7 +425,7 @@ function recallVector_(
 ): void {
     let newEvents: Feature[] = [];
     dates.forEach((dateString) => {
-        for (let id in cacheMap[dateString]) {
+        if (cacheMap[dateString]) for (let id of Object.keys(cacheMap[dateString])) {
             let feature = cacheMap[dateString][id];
             if (!existMap[dateString] || !existMap[dateString][feature.get("skredID")]) {
                 newEvents.push(feature);
@@ -387,6 +433,17 @@ function recallVector_(
         }
     });
 
+    filter_(newEvents, source, existMap, controls, ol, callback);
+}
+
+function filter_(
+    newEvents: Feature[],
+    source: VectorSource,
+    existMap: Record<string, Record<string, Feature>>,
+    controls: Controls,
+    ol: OlObjects,
+    callback: (features: Feature[]) => void
+) {
     let filtered = filterArrayByRegions_(newEvents, true, controls, ol);
     filtered.forEach((feature) => {
         let dateString = getDate(new Date(feature.get("skredTidspunkt")));
@@ -397,10 +454,32 @@ function recallVector_(
     callback(filtered);
 }
 
+function getRegions_(controls: Controls, ol: OlObjects) {
+    let url = '/static/geojson/areas.json';
+    get(url, [null], responseText => {
+        let json: GeoJSONFeatureCollection = JSON.parse(responseText);
+        let features = new GeoJSON({}).readFeatures(json);
+        let regionIdName: [number, string][] = [];
+        features.forEach((feature) => {
+            let id = feature.get("omradeID");
+            let name = feature.get("omradeNavn");
+            ol.regions[parseInt(id)] = feature;
+            regionIdName.push([id, name]);
+        });
+        regionIdName = regionIdName.sort((tup1, tup2) => {
+            return tup1[1].localeCompare(tup2[1], 'no-NO');
+        });
+        regionIdName.forEach(([id, name]) => {
+            addRegion(id, name, controls, ol);
+        });
+        ol.regionLayer.getSource().addFeatures(features);
+    });
+}
+
 function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Controls, ol: OlObjects): Feature[] {
     let name = controls.regionSelector.value;
     if (name) {
-        let geometry = ol.regions[name].getGeometry();
+        let geometry = ol.regions[parseInt(name, 10)].getGeometry();
         let geoJson = new GeoJSON();
         let geoJsonRegion = geoJson.writeGeometryObject(geometry) as turf.GeometryObject;
         return array.map((feature) => {

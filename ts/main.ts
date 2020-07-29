@@ -6,7 +6,9 @@ import Cluster from "ol/source/Cluster";
 import Point from "ol/geom/Point";
 import Feature from "ol/Feature";
 import Polygon from "ol/geom/Polygon";
-import {getDate} from "./controls";
+import {getDate} from "./date";
+
+// All event listeners go into main.ts
 
 document.addEventListener('DOMContentLoaded', () => {
     let controls = Controls.initControls();
@@ -46,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ) return;
 
         let [oldDateStart, oldDateEnd] = [currentDateStart, currentDateEnd];
-        [currentDateStart, currentDateEnd] = Controls.adjustRangeStart(oldDateStart, oldDateEnd);
+        [currentDateStart, currentDateEnd] = Controls.adjustRangeStart(oldDateStart, oldDateEnd, controls);
         setTimeout(dateChangeClosure, 0);
     };
 
@@ -60,8 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             || dateEnd < dateEndMin || dateEnd > dateEndMax
         ) return;
 
-        let oldDateStart = currentDateStart;
-        [currentDateStart, currentDateEnd] = Controls.adjustRangeEnd(oldDateStart);
+        [currentDateStart, currentDateEnd] = Controls.adjustRangeEnd(currentDateStart, controls);
         setTimeout(dateChangeClosure, 0);
     };
 
