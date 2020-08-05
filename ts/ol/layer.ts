@@ -1,7 +1,7 @@
 import {COLORS, VECTOR_OPACITY} from "../color";
 import {getPrecision} from "../ol";
 import * as Cookie from "../cookie";
-import Layer from "ol/layer/Layer";
+import {get} from "../network";
 import Overlay from "ol/Overlay";
 import Map from "ol/Map";
 import {Coordinate} from "ol/coordinate";
@@ -23,8 +23,12 @@ import ImageStyle from "ol/style/Image";
 import Text from "ol/style/Text";
 import Tile from "ol/Tile";
 import VectorSource from "ol/source/Vector";
-import proj4 from "proj4";
+import ImageLayer from "ol/layer/Image";
+import {ImageWMS} from "ol/source";
+import {Layer} from "ol/layer";
 import {register} from "ol/proj/proj4";
+import proj4 from "proj4";
+import LayerSwitcher = require("ol-layerswitcher");
 
 const EXP_TIMEOUT = 500;
 const ATTR_NVE = [
@@ -93,7 +97,7 @@ function createMap(layers: Layer[], overlay: Overlay[]): Map {
     let storedZoom = parseFloat(Cookie.getCookie("zoomLevel"));
     let center: Coordinate = storedE && storedN && storedZoom ? [storedE, storedN] : INIT_POS;
     let zoom = storedE && storedN && storedZoom ? storedZoom : INIT_ZOOM;
-    return new Map({
+    let map = new Map({
         layers: layers,
         overlays: overlay,
         target: 'map',
@@ -103,6 +107,14 @@ function createMap(layers: Layer[], overlay: Overlay[]): Map {
             pinchRotate: false,
         }),
     });
+    // @ts-ignore
+    let switcher = new LayerSwitcher({
+        tipLabel: 'Layers',
+        groupSelectStyle: 'group'
+    });
+    switcher.setMap(map);
+    map.addControl(switcher);
+    return map;
 }
 
 function createView(extent: Extent, center: Coordinate, zoom: number): View {
@@ -117,7 +129,7 @@ function createView(extent: Extent, center: Coordinate, zoom: number): View {
     return new View(options);
 }
 
-function createBaseLayer(backoff_counter: Record<string, number>): TileLayer {
+function createBaseLayer(layerName: string, backoff_counter: Record<string, number>): TileLayer {
     let baseLayer = new TileLayer({
         source: new WMTS({
             url: TILE_URL,
@@ -127,7 +139,7 @@ function createBaseLayer(backoff_counter: Record<string, number>): TileLayer {
                 resolutions: RESOLUTIONS,
                 matrixIds: MATRIX_IDS,
             }),
-            layer: 'topo4graatone',
+            layer: layerName,
             matrixSet: 'EPSG:25833',
             format: 'image/png',
             projection: PROJECTION,
@@ -140,6 +152,33 @@ function createBaseLayer(backoff_counter: Record<string, number>): TileLayer {
         exponentialBackoff_(e.tile, backoff_counter);
     });
     return baseLayer;
+}
+
+function createWMSLayer(): ImageLayer {
+    let baseLayerOrtho = new ImageLayer({
+        extent: [-250025, 6299985, 1211155, 8985010],
+        zIndex: 1,
+        source: new ImageWMS(),
+    });
+    let orthoStartDate: Date;
+    let orthoClosure = () => {
+        if (!orthoStartDate || new Date().getTime() - orthoStartDate.getTime() > 1000 * 3000) {
+            get("/api/baat/nib", [null], (ticket) => {
+                orthoStartDate = new Date();
+                baseLayerOrtho.setSource(new ImageWMS({
+                    url: 'https://wms.geonorge.no/skwms1/wms.nib',
+                    attributions: ATTR_KV,
+                    params: {
+                        'ticket': ticket,
+                        'layers': 'ortofoto',
+                    },
+                }));
+            });
+        }
+        setTimeout(orthoClosure, 1000 * 3000);
+    };
+    setTimeout(orthoClosure, 0);
+    return baseLayerOrtho;
 }
 
 function createRegionLayer(): VectorImageLayer {
@@ -273,6 +312,7 @@ export {
     createMap,
     createView,
     createBaseLayer,
+    createWMSLayer,
     createRegionLayer,
     createSelectedRegionLayer,
     createEventLayer,
