@@ -1,9 +1,12 @@
+from settings import SETTINGS
 from flask import Flask, request
 from waitress import serve
 import time
 import pandas as pd
 import geopandas as gpd
 import pyodbc
+import re
+import requests
 import datetime as dt
 import multiprocessing
 import contextlib
@@ -196,6 +199,24 @@ def events_point(w, s, e, n):
     bbox = f'POLYGON (({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))'
     return geo_query(q, [bbox, EPSG, start, end])
 
+@app.route('/api/baat/nib')
+def baat_nib():
+    for regex in SETTINGS['REFERERS']:
+        if request.referrer and re.match(regex, request.referrer):
+            url = "".join([
+                "https://baat.geonorge.no/skbaatts/req?",
+                "retformat=s&",
+                f"brukerid={SETTINGS['BAAT_USERNAME']}&"
+                f"passord={SETTINGS['BAAT_PASSWORD']}&"
+                "tjenesteid=wms.nib"
+            ])
+            sec_req = requests.get(url)
+            if sec_req.status_code == 200:
+                return sec_req.text
+            break
+    return app.response_class(
+        status=403,
+    )
 
 def date_parse(request):
     """ Determine if date parameters are present in the GET parameters of the request.

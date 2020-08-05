@@ -13,8 +13,8 @@ import {containsCoordinate, Extent} from 'ol/extent';
 import VectorSource from "ol/source/Vector";
 import Feature, {FeatureLike} from "ol/Feature";
 import Overlay from 'ol/Overlay.js';
-import * as turf from '@turf/turf';
 import Polygon from "ol/geom/Polygon";
+import * as turf from '@turf/turf';
 
 interface OlObjects {
     // Ol Map object
@@ -50,12 +50,14 @@ interface OlObjects {
     cluster_all_req: [XMLHttpRequest | null],
 
     // Keeps track of the number of times basemap tiles has failed to load.
-    backoff_counter: Record<string, number>,
+    backoff_counter_bw: Record<string, number>,
+    backoff_counter_color: Record<string, number>,
 
     // Map of regions by their numerical IDs.
     regions: Record<number, Feature>,
 
-    baseLayer: TileLayer,
+    baseLayerBw: TileLayer,
+    baseLayerColor: TileLayer,
     regionLayer: VectorImageLayer,
     // Layer containing currently selected region.
     selectedRegionLayer: VectorImageLayer,
@@ -82,9 +84,26 @@ function initMap(controls: Controls): OlObjects {
     let eventsStoredByDate: Record<string, Record<string, Feature>> = {};
     let clustersStoredByDate: Record<string, Record<string, Feature>> = {};
     let regions: Record<string, Feature> = {};
-    let backoff_counter: Record<string, number> = {};
+    let backoff_counter_bw: Record<string, number> = {};
+    let backoff_counter_color: Record<string, number> = {};
 
-    let baseLayer = Layer.createBaseLayer(backoff_counter);
+    let baseLayerBw = Layer.createBaseLayer('topo4graatone', backoff_counter_bw);
+    baseLayerBw.setZIndex(0);
+    let fakeBaseLayer = new TileLayer();
+    fakeBaseLayer.set('title', 'Grayscale Topo Map');
+    fakeBaseLayer.set('type', 'base');
+
+    let baseLayerColor = Layer.createBaseLayer('topo4', backoff_counter_color);
+    baseLayerColor.set('title', 'Color Topo Map');
+    baseLayerColor.set('type', 'base');
+    baseLayerColor.on("change:visible", (e) => {
+        baseLayerBw.setVisible(!e.target.get(e.key));
+    });
+
+    let baseLayerOrtho = Layer.createWMSLayer();
+    baseLayerOrtho.set('title', 'Orthophoto');
+    baseLayerOrtho.set('type', 'base');
+
     let regionLayer = Layer.createRegionLayer();
     let selectedRegionLayer = Layer.createSelectedRegionLayer();
     let eventLayer = Layer.createEventLayer();
@@ -94,7 +113,10 @@ function initMap(controls: Controls): OlObjects {
     selectedEventLayer.setZIndex(5);
 
     let layers = [
-        baseLayer,
+        baseLayerOrtho,
+        baseLayerColor,
+        fakeBaseLayer,
+        baseLayerBw,
         regionLayer,
         selectedRegionLayer,
         eventLayer,
@@ -116,9 +138,11 @@ function initMap(controls: Controls): OlObjects {
         events_all_req: [null],
         cluster_part_req: [null],
         cluster_all_req: [null],
-        backoff_counter,
+        backoff_counter_bw,
+        backoff_counter_color,
         regions,
-        baseLayer,
+        baseLayerBw,
+        baseLayerColor,
         regionLayer,
         selectedRegionLayer,
         eventLayer,

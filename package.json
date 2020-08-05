@@ -23,6 +23,7 @@
     "@types/proj4": "^2.5.0",
     "highcharts": "^8.1.2",
     "ol": "^6.3.1",
+    "ol-layerswitcher": "git://github.com/bryanSME/ol-layerswitcher.git#847f6f231e0e49c7ecb32e24f0a1004be9ebcad6",
     "proj4": "^2.6.2",
     "ts-loader": "^7.0.5",
     "typescript": "^3.9.6",
