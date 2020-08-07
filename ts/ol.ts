@@ -15,6 +15,8 @@ import Feature, {FeatureLike} from "ol/Feature";
 import Overlay from 'ol/Overlay.js';
 import Polygon from "ol/geom/Polygon";
 import * as turf from '@turf/turf';
+import Group from "ol/layer/Group";
+import ImageLayer from "ol/layer/Image";
 
 interface OlObjects {
     // Ol Map object
@@ -100,9 +102,33 @@ function initMap(controls: Controls): OlObjects {
         baseLayerBw.setVisible(!e.target.get(e.key));
     });
 
-    let baseLayerOrtho = Layer.createWMSLayer();
+    let baseLayerOrtho = Layer.createOrthoLayer();
     baseLayerOrtho.set('title', 'Orthophoto');
     baseLayerOrtho.set('type', 'base');
+
+    let slopeUrl = 'https://gis3.nve.no/map/rest/services/Bratthet/MapServer';
+    let slopeLayer = Layer.createNveLayer(slopeUrl, 'show:0,1');
+    slopeLayer.setVisible(false)
+    slopeLayer.set('title', 'Slope');
+
+
+    let dangerUrl = 'https://gis3.nve.no/map/rest/services/SkredSnoAktR/MapServer';
+    let dangerGroup = new Group({
+        visible: false,
+        layers: [
+            Layer.createNveLayer(dangerUrl, 'show:0'),
+            Layer.createNveLayer(dangerUrl, 'show:1,2'),
+        ]
+    });
+    dangerGroup.getLayers().getArray()[0].setMaxZoom(13.75773);
+    dangerGroup.getLayers().getArray()[1].setMinZoom(13.75773);
+    let fakeDangerLayer = new ImageLayer({
+        visible: false
+    });
+    fakeDangerLayer.set('title', 'Danger zones');
+    fakeDangerLayer.on("change:visible", (e) => {
+        dangerGroup.setVisible(e.target.get(e.key));
+    });
 
     let regionLayer = Layer.createRegionLayer();
     let selectedRegionLayer = Layer.createSelectedRegionLayer();
@@ -110,13 +136,29 @@ function initMap(controls: Controls): OlObjects {
     let selectedEventLayer = Layer.createEventLayer();
     let clusterLayer = Layer.createClusterLayer();
     selectedEventLayer.setOpacity(1);
-    selectedEventLayer.setZIndex(5);
+    selectedEventLayer.setZIndex(6);
+
+    let baseGroup = new Group({
+        layers: [
+            baseLayerOrtho,
+            baseLayerColor,
+            fakeBaseLayer,
+            baseLayerBw,
+        ]
+    });
+    baseGroup.set('title', 'Baselayers');
+    let extraGroup = new Group({
+        layers: [
+            fakeDangerLayer,
+            dangerGroup,
+            slopeLayer,
+        ]
+    });
+    extraGroup.set('title', 'Overlays');
 
     let layers = [
-        baseLayerOrtho,
-        baseLayerColor,
-        fakeBaseLayer,
-        baseLayerBw,
+        extraGroup,
+        baseGroup,
         regionLayer,
         selectedRegionLayer,
         eventLayer,
