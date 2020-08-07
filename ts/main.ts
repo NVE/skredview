@@ -21,14 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
         Charts.calculateSize(features, charts, controls);
         Charts.calculateExposition(features, charts, controls);
     };
-    let clusterClosure = (features: Feature[]) =>{
-        Charts.calculateTimelineCluster(features, charts, controls);
+    let clusterClosure = (newFeatures: Feature[], complete: boolean) => {
+        let clusterSource = ol.clusterLayer.getSource() as Cluster;
+        if (complete) Controls.showEmptyBox(!clusterSource.getSource().getFeatures().length);
+        Charts.calculateTimelineCluster(newFeatures, charts, controls);
     };
     Ol.getCluster(ol, controls, clusterClosure);
     Ol.getEvents(ol, controls, eventClosure);
 
     let dateChangeClosure = () => {
         Popup.setPopup(undefined, null, ol);
+        Controls.showEmptyBox(false);
         Ol.resetVectors(false, true, ol, controls);
         Charts.updateTimelineDates(charts, controls, ol);
         Charts.clearSize(false, charts);
@@ -88,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Controls.adjustRegion(ol, controls);
         let selectedRegion = controls.regionSelector.value;
         setTimeout(() => {
+            Controls.showEmptyBox(false);
             Ol.resetVectors(true, selectedRegion == "", ol, controls);
             Ol.selectRegion(ol, controls);
             if (selectedRegion != "") {

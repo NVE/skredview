@@ -170,7 +170,7 @@ function initMap(controls: Controls): OlObjects {
 function getEvents(
     ol: OlObjects,
     controls: Controls,
-    callback: (filtered: Feature[]) => void,
+    callback: (filtered: Feature[], complete: boolean) => void,
 ): void {
     let dateStart = controls.dateStart.value as string;
     let dateEnd = controls.dateEnd.value as string;
@@ -209,7 +209,7 @@ function getEvents(
 function getCluster(
     ol: OlObjects,
     controls: Controls,
-    callback: (filtered: Feature[]) => void,
+    callback: (filtered: Feature[], complete: boolean) => void,
 ): void {
     let dateStart = controls.dateStart.value as string;
     let dateEnd = controls.dateEnd.value as string;
@@ -404,11 +404,11 @@ function getVector_(
     source: VectorSource,
     ol: OlObjects,
     controls: Controls,
-    callback: (features: Feature[]) => void,
+    callback: (features: Feature[], complete: boolean) => void,
 ): void {
     if (isLoaded[0]) return;
 
-    let closure = (responseText: string) => {
+    let closure = (responseText: string, complete: boolean) => {
         let json: GeoJSONFeatureCollection = JSON.parse(responseText);
         let newEvents: Feature[] = [];
 
@@ -425,15 +425,17 @@ function getVector_(
             }
         });
 
-        filter_(newEvents, source, existMap, controls, ol, callback);
+        filter_(newEvents, source, existMap, controls, ol, (features) => {
+            return callback(features, complete);
+        });
     };
 
-    get(part_url, part_req, closure);
+    get(part_url, part_req, (responseText) => closure(responseText, false));
     if (!isStarted[0]) {
         isStarted[0] = true;
         get(all_url, all_req, (responseText) => {
             isLoaded[0] = true;
-            closure(responseText);
+            closure(responseText, true);
         });
     }
 }
@@ -445,7 +447,7 @@ function recallVector_(
     source: VectorSource,
     ol: OlObjects,
     controls: Controls,
-    callback: (features: Feature[]) => void,
+    callback: (features: Feature[], complete: boolean) => void,
 ): void {
     let newEvents: Feature[] = [];
     dates.forEach((dateString) => {
@@ -457,7 +459,9 @@ function recallVector_(
         }
     });
 
-    filter_(newEvents, source, existMap, controls, ol, callback);
+    filter_(newEvents, source, existMap, controls, ol, (features) => {
+        return callback(features, false);
+    });
 }
 
 function filter_(

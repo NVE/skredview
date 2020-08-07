@@ -48,6 +48,24 @@ input, select {
     border: #E0E0E0;
     border-width: 1px;
     border-style: solid;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+#emptybox {
+    display: none;
+    position: absolute;
+    z-index: 10;
+    background-color: rgb(244,244,244);
+    margin-bottom: 0.5em;
+    padding: 10px;
+    text-align: center;
+    color: darkred;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: darkred;
+    border-style: solid;
 }
 
 #controls {
