@@ -7,6 +7,7 @@ const COLORS = {
     SIZE_100_000: '#044157',
     SIZE_500_000: '#033648',
     SIZE_MAX: '#32332A',
+    HEIGHT: '#009994',
     EXPOSITION: 'rgb(117, 177, 0)',
     BORDER: '#E3000F',
     BORDER_SELECTED: '#75B100',

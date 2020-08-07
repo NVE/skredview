@@ -16,10 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDateEnd = new Date(controls.dateEnd.value as string);
     let ol = Ol.initMap(controls);
     let charts = Charts.initCharts(controls);
-    let eventClosure = (features: Feature<Polygon>[]) =>{
-        Charts.calculateTimelineEvent(features, charts, controls);
-        Charts.calculateSize(features, charts, controls);
-        Charts.calculateExposition(features, charts, controls);
+    let eventClosure = (newFeatures: Feature<Polygon>[], _complete: boolean) => {
+        Charts.calculateTimelineEvent(newFeatures, charts, controls);
+        Charts.calculateSize(newFeatures, charts, controls);
+        Charts.calculateHeight(newFeatures, charts, controls);
+        Charts.calculateExposition(newFeatures, charts, controls);
     };
     let clusterClosure = (newFeatures: Feature[], complete: boolean) => {
         let clusterSource = ol.clusterLayer.getSource() as Cluster;
@@ -35,12 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
         Ol.resetVectors(false, true, ol, controls);
         Charts.updateTimelineDates(charts, controls, ol);
         Charts.clearSize(false, charts);
+        Charts.clearHeight(false, charts);
         Charts.clearExposition(false, charts);
         Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
+        Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Ol.getCluster(ol, controls, clusterClosure);
         Ol.getEvents(ol, controls, eventClosure);
     };
+
     controls.dateStart.oninput = () => {
         let dateStart = new Date(controls.dateStart.value);
         let dateEnd = new Date(controls.dateEnd.value);
@@ -100,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Charts.calculateTimelineEvent(ol.eventLayer.getSource().getFeatures(), charts, controls);
                 Charts.calculateTimelineCluster(clustersource.getSource().getFeatures(), charts, controls);
                 Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
+                Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
                 Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
             }
             Ol.getCluster(ol, controls, clusterClosure);
