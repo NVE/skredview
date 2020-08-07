@@ -121,4 +121,13 @@ function adjustRegion(ol: OlObjects, controls: Controls): void {
     Cookie.setCookie("region", name, Cookie.TTL);
 }
 
-export {Controls, initControls, adjustRangeStart, adjustRangeEnd, addRegion, adjustRegion, getDate};
+/**
+ * Controls visibility of a warning stating that no results were found.
+ * @param state: Whether to show warning of no results or not.
+ */
+function showEmptyBox(state: boolean): void {
+    let emptyBox = document.getElementById('emptybox') as HTMLDivElement;
+    emptyBox.style.display = state ? 'block' : 'none';
+}
+
+export {Controls, initControls, adjustRangeStart, adjustRangeEnd, addRegion, adjustRegion, getDate, showEmptyBox};
