@@ -24,11 +24,12 @@ import Text from "ol/style/Text";
 import Tile from "ol/Tile";
 import VectorSource from "ol/source/Vector";
 import ImageLayer from "ol/layer/Image";
-import {ImageWMS} from "ol/source";
+import {ImageArcGISRest, ImageWMS} from "ol/source";
 import {Layer} from "ol/layer";
 import {register} from "ol/proj/proj4";
 import proj4 from "proj4";
 import LayerSwitcher = require("ol-layerswitcher");
+import LayerGroup from "ol/layer/Group";
 
 const EXP_TIMEOUT = 500;
 const ATTR_NVE = [
@@ -91,7 +92,7 @@ const MATRIX_IDS = [
 proj4.defs('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
 register(proj4);
 
-function createMap(layers: Layer[], overlay: Overlay[]): Map {
+function createMap(layers: (Layer | LayerGroup)[], overlay: Overlay[]): Map {
     let storedE = parseFloat(Cookie.getCookie("eastings"));
     let storedN = parseFloat(Cookie.getCookie("northings"));
     let storedZoom = parseFloat(Cookie.getCookie("zoomLevel"));
@@ -110,7 +111,7 @@ function createMap(layers: Layer[], overlay: Overlay[]): Map {
     // @ts-ignore
     let switcher = new LayerSwitcher({
         tipLabel: 'Layers',
-        groupSelectStyle: 'group'
+        groupSelectStyle: 'none'
     });
     switcher.setMap(map);
     map.addControl(switcher);
@@ -154,7 +155,7 @@ function createBaseLayer(layerName: string, backoff_counter: Record<string, numb
     return baseLayer;
 }
 
-function createWMSLayer(): ImageLayer {
+function createOrthoLayer(): ImageLayer {
     let baseLayerOrtho = new ImageLayer({
         extent: [-250025, 6299985, 1211155, 8985010],
         zIndex: 1,
@@ -181,6 +182,20 @@ function createWMSLayer(): ImageLayer {
     return baseLayerOrtho;
 }
 
+function createNveLayer(url: string, layer: string): ImageLayer {
+    return new ImageLayer({
+        zIndex: 2,
+        opacity: 0.5,
+        source: new ImageArcGISRest({
+            attributions: ATTR_NVE,
+            params: {
+                'layers': layer,
+            },
+          url,
+        }),
+    });
+}
+
 function createRegionLayer(): VectorImageLayer {
     return new VectorImageLayer({
         source: new Vector({
@@ -197,7 +212,7 @@ function createRegionLayer(): VectorImageLayer {
             }),
         }),
         opacity: 0.5,
-        zIndex: 2,
+        zIndex: 3,
     });
 }
 
@@ -216,7 +231,7 @@ function createSelectedRegionLayer(): VectorImageLayer {
                 width: 3,
             }),
         }),
-        zIndex: 3,
+        zIndex: 4,
     });
 }
 
@@ -251,7 +266,7 @@ function createEventLayer(): VectorImageLayer {
             }
             return style;
         },
-        zIndex: 4,
+        zIndex: 5,
     });
 }
 
@@ -291,7 +306,7 @@ function createClusterLayer(): VectorImageLayer {
             }
             return style;
         },
-        zIndex: 4,
+        zIndex: 5,
     });
 }
 
@@ -312,7 +327,8 @@ export {
     createMap,
     createView,
     createBaseLayer,
-    createWMSLayer,
+    createOrthoLayer,
+    createNveLayer,
     createRegionLayer,
     createSelectedRegionLayer,
     createEventLayer,
