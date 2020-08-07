@@ -103,8 +103,8 @@ input, select {
     height: 40vh;
 }
 
-#statistics-size {
-    flex: 50vh;
+#statistics-size, #statistics-height {
+    flex: 40vh;
     min-height: 30vh;
 }
 

@@ -10,6 +10,7 @@ HighchartsMore.default(Highcharts);
 interface Charts {
     timeline: Highcharts.Chart,
     size: Highcharts.Chart,
+    height: Highcharts.Chart,
     exposition: Highcharts.Chart,
 }
 
@@ -17,6 +18,7 @@ const SIZE_CATEGORIES = ["< 10.000 m²", "< 50.000 m²", "< 100.000 m²", "< 500
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const EXPOSITIONS_NO = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
 const D_SIZE = "Debris area";
+const D_HEIGHT = "Debris height";
 const A_TIME = "Avalanche Timeline";
 const EXPOSITION = "Debris Exposition";
 
@@ -31,7 +33,7 @@ function initCharts(controls: Controls): Charts {
     let sizeBorderColor = new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get();
     let precTooltipStyle = `color:{point.color}; stroke: ${precBorderColor}; font-size: 20px;`;
     let sizeTooltipStyle = `color:{point.color}; stroke: ${sizeBorderColor}; font-size: 20px;`;
-    let expTooltipStyle = `color:{point.color}; font-size: 20px;`;
+    let basicTooltipStyle = `color:{point.color}; font-size: 20px;`;
     let timeline = Highcharts.chart('statistics-timeline', {
         chart: {
             type: 'column',
@@ -289,6 +291,68 @@ function initCharts(controls: Controls): Charts {
             },
         ]
     }, () => null);
+    let height = Highcharts.chart('statistics-height', {
+        chart: {
+            type: 'bar',
+            backgroundColor: COLORS.BACKGROUND,
+            style: {
+                fontFamily: 'Source Sans Pro, sans-serif',
+            }
+        },
+        title: {
+            text: D_HEIGHT,
+            style: {
+                fontSize: '24px',
+            }
+        },
+        plotOptions: {
+            bar: {
+                pointPadding: 0.1,
+                groupPadding: 0.1
+            }
+        },
+        xAxis: {
+            categories: [],
+            reversed: false,
+            labels: {
+                style: {
+                    fontSize: '14px',
+                },
+            }
+        },
+        yAxis: {
+            allowDecimals: false,
+            title: {
+                text: 'Detected avalanches',
+                style: {
+                    fontSize: '20px',
+                    fontWeight: '600',
+                }
+            },
+            labels: {
+                style: {
+                    fontSize: '14px',
+                }
+            }
+        },
+        tooltip: {
+            headerFormat: '<span style="font-size: 12px">{point.key}</span><br/>',
+            pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`,
+            style: {
+                fontSize: '14px'
+            }
+        },
+        series: [
+            {
+                name: 'Detected avalanches',
+                data: [],
+                type: "bar",
+                color: COLORS.HEIGHT,
+                showInLegend: false,
+                pointPlacement: 'between',
+            },
+        ]
+    }, () => null);
     let exposition = Highcharts.chart('statistics-exposition', {
         chart: {
             polar: true,
@@ -329,7 +393,7 @@ function initCharts(controls: Controls): Charts {
         },
         tooltip: {
             headerFormat: '<span style="font-size: 12px">{point.key}</span><br/>',
-            pointFormat: `<span style="${expTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`,
+            pointFormat: `<span style="${basicTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`,
             style: {
                 fontSize: '14px'
             }
@@ -349,6 +413,7 @@ function initCharts(controls: Controls): Charts {
     return {
         timeline,
         size,
+        height,
         exposition,
     };
 }
@@ -443,6 +508,30 @@ function calculateSize(features: Feature[], charts: Charts, controls: Controls) 
 }
 
 /**
+ * Add features to the height chart. Make sure to add features not already present in the chart.
+ * @param features: Feature[] - Features to add to the height chart.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
+function calculateHeight(features: Feature[], charts: Charts, controls: Controls) {
+    features.forEach((feature) => {
+        let height = feature.get('hoydeStoppSkred_moh');
+        let series = charts.height.series[0];
+        let offset = Math.floor(height / 200);
+        while (series.xAxis.categories.length < offset + 1) {
+            let categories = series.xAxis.categories;
+            let newCategory = `${categories.length * 200} m.a.s.l.`;
+            series.xAxis.setCategories(categories.concat([newCategory]));
+            series.setData(series.data.map(p => p.y).concat([0]));
+        }
+        let dataPoint = series.data[offset].y;
+        series.data[offset].update({y: dataPoint + 1}, false);
+    });
+
+    charts.height.redraw();
+}
+
+/**
  * Add features to the exposition chart. Make sure to add features not already present in the chart.
  * @param features: Feature[] - Features to add to the exposition chart.
  * @param charts: Charts
@@ -473,6 +562,7 @@ function clearStatistics(redraw: boolean, charts: Charts) {
         series.setData(emptyArray_(series.data.length, 0), redraw);
     });
     clearSize(redraw, charts);
+    clearHeight(redraw, charts);
     clearExposition(redraw, charts);
 }
 
@@ -520,6 +610,17 @@ function clearSize(redraw: boolean, charts: Charts) {
 }
 
 /**
+ * Remove all statistics from the height chart. I.e., set all y-values to 0.
+ * @param redraw: boolean - Whether to redraw the chart.
+ * @param charts: Charts
+ */
+function clearHeight(redraw: boolean, charts: Charts) {
+    let series = charts.height.series[0];
+    series.setData([], false);
+    series.xAxis.setCategories([], redraw);
+}
+
+/**
  * Remove all statistics from the exposition chart. I.e., set all y-values to 0.
  * @param redraw: boolean - Whether to redraw the chart.
  * @param charts: Charts
@@ -541,9 +642,11 @@ export {
     calculateTimelineEvent,
     calculateTimelineCluster,
     calculateSize,
+    calculateHeight,
     calculateExposition,
     clearStatistics,
     updateTimelineDates,
     clearSize,
+    clearHeight,
     clearExposition,
 };
