@@ -18,7 +18,7 @@ const SIZE_CATEGORIES = ["< 10.000 m²", "< 50.000 m²", "< 100.000 m²", "< 500
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const EXPOSITIONS_NO = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
 const D_SIZE = "Debris area";
-const D_HEIGHT = "Debris height";
+const D_HEIGHT = "Debris elevation";
 const A_TIME = "Avalanche Timeline";
 const EXPOSITION = "Debris Exposition";
 
