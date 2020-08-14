@@ -34,7 +34,7 @@ function initCharts(controls: Controls): Charts {
     let precTooltipStyle = `color:{point.color}; stroke: ${precBorderColor}; font-size: 20px;`;
     let sizeTooltipStyle = `color:{point.color}; stroke: ${sizeBorderColor}; font-size: 20px;`;
     let basicTooltipStyle = `color:{point.color}; font-size: 20px;`;
-    let timeline = Highcharts.chart('statistics-timeline', {
+    let timeline = Highcharts.chart('charts-timeline', {
         chart: {
             type: 'column',
             backgroundColor: COLORS.BACKGROUND,
@@ -194,7 +194,7 @@ function initCharts(controls: Controls): Charts {
             },
         ]
     }, () => null);
-    let size = Highcharts.chart('statistics-size', {
+    let size = Highcharts.chart('charts-size', {
         chart: {
             type: 'column',
             backgroundColor: COLORS.BACKGROUND,
@@ -291,7 +291,7 @@ function initCharts(controls: Controls): Charts {
             },
         ]
     }, () => null);
-    let height = Highcharts.chart('statistics-height', {
+    let height = Highcharts.chart('charts-height', {
         chart: {
             type: 'bar',
             backgroundColor: COLORS.BACKGROUND,
@@ -353,7 +353,7 @@ function initCharts(controls: Controls): Charts {
             },
         ]
     }, () => null);
-    let exposition = Highcharts.chart('statistics-exposition', {
+    let exposition = Highcharts.chart('charts-exposition', {
         chart: {
             polar: true,
             backgroundColor: COLORS.BACKGROUND,
@@ -637,6 +637,8 @@ function emptyArray_(size: number, value: number): Array<number> {
 }
 
 export {
+    EXPOSITIONS,
+    EXPOSITIONS_NO,
     Charts,
     initCharts,
     calculateTimelineEvent,

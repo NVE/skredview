@@ -1,6 +1,7 @@
 import * as Controls from "./controls";
 import * as Ol from "./ol";
 import * as Charts from "./charts";
+import * as Statistics from "./statistics"
 import * as Popup from "./ol/popup";
 import Cluster from "ol/source/Cluster";
 import Point from "ol/geom/Point";
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Charts.calculateSize(newFeatures, charts, controls);
         Charts.calculateHeight(newFeatures, charts, controls);
         Charts.calculateExposition(newFeatures, charts, controls);
+        Statistics.calculateStatistics(ol);
     };
     let clusterClosure = (newFeatures: Feature[], complete: boolean) => {
         let clusterSource = ol.clusterLayer.getSource() as Cluster;
@@ -38,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Charts.clearSize(false, charts);
         Charts.clearHeight(false, charts);
         Charts.clearExposition(false, charts);
+        Statistics.clearStatistics();
         Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
@@ -107,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
                 Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
             }
+            Statistics.clearStatistics();
             Ol.getCluster(ol, controls, clusterClosure);
             Ol.getEvents(ol, controls, eventClosure);
         }, 0);
