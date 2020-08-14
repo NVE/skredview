@@ -55,6 +55,48 @@
                         Temporal precision > 48 h
                     </div>
                 </div>
+                <div id="statistics">
+                    <h2>Statistics</h2>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Avalanches</td>
+                                <td id="stat-avalanches-all"></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Avalanches (< 24 h)</td>
+                                <td id="stat-avalanches-24"></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td>Area (median)</td>
+                                <td id="stat-size-median"></td>
+                                <td>m²</td>
+                            </tr>
+                            <tr>
+                                <td>Area (mean)</td>
+                                <td id="stat-size-mean"></td>
+                                <td>m²</td>
+                            </tr>
+                            <tr>
+                                <td>Area (min)</td>
+                                <td id="stat-size-min"></td>
+                                <td>m²</td>
+                            </tr>
+                            <tr>
+                                <td>Area (max)</td>
+                                <td id="stat-size-max"></td>
+                                <td>m²</td>
+                            </tr>
+                            <tr>
+                                <td>Aspect (most common)</td>
+                                <td id="stat-aspect-median"></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div id="frame-inner">
@@ -67,12 +109,12 @@
               <a href="#" id="popup-closer" class="ol-popup-closer"></a>
               <div id="popup-content"></div>
             </div>
-            <div id="statistics">
-                <div id="statistics-timeline" class="statistics-chart"></div>
-                <div id="statistics-inner">
-                    <div id="statistics-size" class="statistics-chart"></div>
-                    <div id="statistics-height" class="statistics-chart"></div>
-                    <div id="statistics-exposition" class="statistics-chart"></div>
+            <div id="charts">
+                <div id="charts-timeline" class="charts-chart"></div>
+                <div id="charts-inner">
+                    <div id="charts-size" class="charts-chart"></div>
+                    <div id="charts-height" class="charts-chart"></div>
+                    <div id="charts-exposition" class="charts-chart"></div>
                 </div>
             </div>
         </div>

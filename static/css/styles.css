@@ -78,14 +78,14 @@ input, select {
     position: sticky;
 }
 
-#statistics {
+#charts {
     margin: 0px;
     width: 90%;
     margin-left: auto;
     margin-right: auto;
 }
 
-#statistics-inner {
+#charts-inner {
 	display: flex;
 	flex-direction: row;
 	flex-wrap: wrap;
@@ -98,22 +98,22 @@ input, select {
     width: 300px;
 }
 
-#statistics-timeline {
+#charts-timeline {
     width: 100%;
     height: 40vh;
 }
 
-#statistics-size, #statistics-height {
+#charts-size, #charts-height {
     flex: 40vh;
     min-height: 30vh;
 }
 
-#statistics-exposition {
+#charts-exposition {
     flex: 50vh;
     height: 40vh;
 }
 
-.statistics-chart {
+.charts-chart {
     margin-top: 40px;
 }
 
@@ -121,8 +121,12 @@ input, select {
     margin-bottom: 20px;
 }
 
-.bold {
+.bold, td:first-child {
     font-weight: 700;
+}
+
+td:nth-child(2) {
+    text-align: right;
 }
 
 .ol-zoom {
