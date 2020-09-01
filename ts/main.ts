@@ -1,7 +1,7 @@
 import * as Controls from "./controls";
 import * as Ol from "./ol";
 import * as Charts from "./charts";
-import * as Statistics from "./statistics"
+import * as Statistics from "./statistics";
 import * as Popup from "./ol/popup";
 import Cluster from "ol/source/Cluster";
 import Point from "ol/geom/Point";
@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (complete) Controls.showEmptyBox(!clusterSource.getSource().getFeatures().length);
         Charts.calculateTimelineCluster(newFeatures, charts, controls);
     };
+    Charts.clearSize(true, charts, controls);
+    Charts.clearTimeline(false, true, true, charts, controls);
     Ol.getCluster(ol, controls, clusterClosure);
     Ol.getEvents(ol, controls, eventClosure);
 
@@ -37,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         Controls.showEmptyBox(false);
         Ol.resetVectors(false, true, ol, controls);
         Charts.updateTimelineDates(charts, controls, ol);
-        Charts.clearSize(false, charts);
+        Charts.clearSize(false, charts, controls);
         Charts.clearHeight(false, charts);
         Charts.clearExposition(false, charts);
         Statistics.clearStatistics();
@@ -103,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Ol.selectRegion(ol, controls);
             if (selectedRegion != "") {
                 let clustersource = (ol.clusterLayer.getSource() as Cluster);
-                Charts.clearStatistics(false, charts);
+                Charts.clearStatistics(false, charts, controls);
                 Charts.calculateTimelineEvent(ol.eventLayer.getSource().getFeatures(), charts, controls);
                 Charts.calculateTimelineCluster(clustersource.getSource().getFeatures(), charts, controls);
                 Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
@@ -114,6 +116,27 @@ document.addEventListener('DOMContentLoaded', () => {
             Ol.getCluster(ol, controls, clusterClosure);
             Ol.getEvents(ol, controls, eventClosure);
         }, 0);
+    };
+
+    controls.areaDsizeRadio[0].oninput = () => {
+        Controls.adjustSize(controls);
+        let features = [];
+        for (let dateString of Object.keys(ol.eventsByDate)) {
+            for (let id of Object.keys(ol.eventsByDate[dateString])) {
+                features.push(ol.eventsByDate[dateString][id]);
+            }
+        }
+        Charts.clearTimeline(false, true, false, charts, controls);
+        Charts.calculateTimelineEvent(features, charts, controls);
+        Charts.clearSize(false, charts, controls);
+        Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
+    };
+    controls.areaDsizeRadio[1].oninput = () => {
+        controls.areaDsizeRadio[0].dispatchEvent(new Event("input"));
+    };
+    controls.dsizeDepth.oninput = () => {
+        controls.areaDsizeRadio[1].checked = true;
+        controls.areaDsizeRadio[0].dispatchEvent(new Event("input"));
     };
 
     ol.map.on('moveend', () => {

@@ -34,6 +34,25 @@
                         <option value=""></option>
                     </select>
                 </div>
+                <div class="bottom-margin">
+                    <div id="size-selector-legend">
+                    Size type:
+                    </div>
+                    <div id="size-selector-radio">
+                        <label>
+                            <input type="radio" id="radio-area" name="radio-dsize-area" value="area" checked>
+                            Area
+                        </label><br>
+                        <label>
+                            <input type="radio" id="radio-dsize" name="radio-dsize-area" value="dsize">
+                            Destructive size (
+                            <input
+                                    type="number" id="dsize-depth" name="dsize-depth" value="50" min="10" max="500"
+                            >&nbspcm deep
+                            )
+                        </label>
+                    </div>
+                </div>
                 <div id="legend" class="bottom-margin">
                     <h2>Legend</h2>
                     <div>

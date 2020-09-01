@@ -15,6 +15,7 @@ interface Charts {
 }
 
 const SIZE_CATEGORIES = ["< 10.000 m²", "< 50.000 m²", "< 100.000 m²", "< 500.000 m²", "≥ 500.000 m²"];
+const DSIZE_CATEGORIES = ["D1", "D2", "D3", "D4", "D5"];
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const EXPOSITIONS_NO = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
 const D_SIZE = "Debris area";
@@ -430,19 +431,7 @@ function calculateTimelineEvent(features: Feature[], charts: Charts, controls: C
         date.setHours(0, 0, 0, 0);
         let dateStart = new Date(controls.dateStart.value);
         let offset = Math.round((date.getTime() - dateStart.getTime()) / (1000 * 3600 * 24));
-        let area = feature.get("area");
-        let series;
-        if (area < 10_000) {
-            series = charts.timeline.series[7];
-        } else if (area < 50_000) {
-            series = charts.timeline.series[6];
-        } else if (area < 100_000) {
-            series = charts.timeline.series[5];
-        } else if (area < 500_000) {
-            series = charts.timeline.series[4];
-        } else {
-            series = charts.timeline.series[3];
-        }
+        let series = charts.timeline.series[7 - getSizeOffset_(feature, controls)];
         let dataPoint = series.data[offset].y;
         series.data[offset].update({y: dataPoint + 1}, false);
     });
@@ -486,19 +475,7 @@ function calculateTimelineCluster(features: Feature[], charts: Charts, controls:
  */
 function calculateSize(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
-        let area = feature.get("area");
-        let offset;
-        if (area < 10_000) {
-            offset = 0;
-        } else if (area < 50_000) {
-            offset = 1;
-        } else if (area < 100_000) {
-            offset = 2;
-        } else if (area < 500_000) {
-            offset = 3;
-        } else {
-            offset = 4;
-        }
+        let offset = getSizeOffset_(feature, controls);
         let series = charts.size.series[offset];
         let dataPoint = series.data[offset].y;
         series.data[offset].update({y: dataPoint + 1}, false);
@@ -556,12 +533,11 @@ function calculateExposition(features: Feature[], charts: Charts, controls: Cont
  * Remove all statistics from all charts. I.e., set all y-values to 0.
  * @param redraw: boolean - Whether to redraw the charts.
  * @param charts: Charts
+ * @param controls: Controls
  */
-function clearStatistics(redraw: boolean, charts: Charts) {
-    charts.timeline.series.forEach((series) => {
-        series.setData(emptyArray_(series.data.length, 0), redraw);
-    });
-    clearSize(redraw, charts);
+function clearStatistics(redraw: boolean, charts: Charts, controls: Controls) {
+    clearTimeline(true, true, redraw, charts, controls);
+    clearSize(redraw, charts, controls);
     clearHeight(redraw, charts);
     clearExposition(redraw, charts);
 }
@@ -599,14 +575,53 @@ function updateTimelineDates(charts: Charts, controls: Controls, ol: OlObjects) 
 }
 
 /**
- * Remove all statistics from the size chart. I.e., set all y-values to 0.
+ * Remove all statistics from the timeline.
+ * @param precision: bookean - Whether to clear precision series
+ * @param size: bookean - Whether to clear size series
  * @param redraw: boolean - Whether to redraw the chart.
  * @param charts: Charts
  */
-function clearSize(redraw: boolean, charts: Charts) {
+function clearTimeline(precision: boolean, size: boolean, redraw: boolean, charts: Charts, controls: Controls) {
+    let categories;
+    if (controls.areaDsizeRadio[0].checked) {
+        categories = SIZE_CATEGORIES;
+    } else {
+        categories = DSIZE_CATEGORIES;
+    }
+    if (precision) {
+        for (let idx of [0, 1, 2]) {
+            let series = charts.timeline.series[idx];
+            series.setData(emptyArray_(series.data.length, 0), redraw);
+        }
+    }
+    if (size) {
+        for (let idx of [3, 4, 5, 6, 7]) {
+            let series = charts.timeline.series[idx];
+            series.setData(emptyArray_(series.data.length, 0), redraw);
+            series.update({type: "column", name: categories[7 - idx]}, false);
+        }
+    }
+    if (redraw) charts.timeline.redraw();
+}
+
+/**
+ * Remove all statistics from the size chart. I.e., set all y-values to 0.
+ * If x-axis setting for labels have change, change labels.
+ * @param redraw: boolean - Whether to redraw the chart.
+ * @param charts: Charts
+ * @param controls: Controls
+ */
+function clearSize(redraw: boolean, charts: Charts, controls: Controls) {
+    let categories;
+    if (controls.areaDsizeRadio[0].checked) {
+        categories = SIZE_CATEGORIES;
+    } else {
+        categories = DSIZE_CATEGORIES;
+    }
     charts.size.series.forEach((series) => {
-        series.setData(emptyArray_(SIZE_CATEGORIES.length, 0), redraw);
-    })
+        series.setData(emptyArray_(categories.length, 0), redraw);
+    });
+    charts.size.xAxis[0].setCategories(categories, redraw);
 }
 
 /**
@@ -636,6 +651,38 @@ function emptyArray_(size: number, value: number): Array<number> {
     return Array.apply(null, new Array(size)).map(Number.prototype.valueOf, value);
 }
 
+function getSizeOffset_(feature: Feature, controls: Controls): number {
+    if (controls.areaDsizeRadio[0].checked) {
+        let area = feature.get("area");
+        if (area < 10_000) {
+            return 0;
+        } else if (area < 50_000) {
+            return 1;
+        } else if (area < 100_000) {
+            return 2;
+        } else if (area < 500_000) {
+            return 3;
+        } else {
+            return 4;
+        }
+    } else {
+        let area = feature.get("area");
+        let volume = area * parseInt(controls.dsizeDepth.value, 10) / 100;
+        let offset;
+        if (volume < Math.pow(10, 2.5)) {
+            return 0;
+        } else if (volume < Math.pow(10, 3.5)) {
+            return 1;
+        } else if (volume < Math.pow(10, 4.5)) {
+            return 2;
+        } else if (volume < Math.pow(10, 5.5)) {
+            return 3;
+        } else {
+            return 4;
+        }
+    }
+}
+
 export {
     EXPOSITIONS,
     EXPOSITIONS_NO,
@@ -648,6 +695,7 @@ export {
     calculateExposition,
     clearStatistics,
     updateTimelineDates,
+    clearTimeline,
     clearSize,
     clearHeight,
     clearExposition,
