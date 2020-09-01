@@ -591,13 +591,13 @@ function clearTimeline(precision: boolean, size: boolean, redraw: boolean, chart
     if (precision) {
         for (let idx of [0, 1, 2]) {
             let series = charts.timeline.series[idx];
-            series.setData(emptyArray_(series.data.length, 0), redraw);
+            series.setData(emptyArray_(series.data.length, 0), false);
         }
     }
     if (size) {
         for (let idx of [3, 4, 5, 6, 7]) {
             let series = charts.timeline.series[idx];
-            series.setData(emptyArray_(series.data.length, 0), redraw);
+            series.setData(emptyArray_(series.data.length, 0), false);
             series.update({type: "column", name: categories[7 - idx]}, false);
         }
     }
@@ -619,7 +619,7 @@ function clearSize(redraw: boolean, charts: Charts, controls: Controls) {
         categories = DSIZE_CATEGORIES;
     }
     charts.size.series.forEach((series) => {
-        series.setData(emptyArray_(categories.length, 0), redraw);
+        series.setData(emptyArray_(categories.length, 0), false);
     });
     charts.size.xAxis[0].setCategories(categories, redraw);
 }
