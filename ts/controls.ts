@@ -7,6 +7,8 @@ interface Controls {
     dateStart: HTMLInputElement,
     dateEnd: HTMLInputElement,
     regionSelector: HTMLSelectElement,
+    areaDsizeRadio: [HTMLInputElement, HTMLInputElement],
+    dsizeDepth: HTMLInputElement,
 }
 
 /**
@@ -16,6 +18,8 @@ interface Controls {
 function initControls(): Controls {
     let storedDateStart = Cookie.getCookie("dateStart");
     let storedDateEnd = Cookie.getCookie("dateEnd");
+    let storedSize = Cookie.getCookie("size");
+    let storedSizeDepth = Cookie.getCookie("sizeDepth");
     let urlDateFrom = new Date(new URL(window.location.href).searchParams.get("dateFrom"));
     let urlDateTo = new Date(new URL(window.location.href).searchParams.get("dateTo"));
     let dateStart = document.getElementById('date-start') as HTMLInputElement;
@@ -51,7 +55,19 @@ function initControls(): Controls {
 
     let regionSelector = document.getElementById("region-selector") as HTMLSelectElement;
 
-    return {dateStart, dateEnd, regionSelector};
+    let areaRadio = document.getElementById("radio-area") as HTMLInputElement;
+    let dsizeRadio = document.getElementById("radio-dsize") as HTMLInputElement;
+    let dsizeDepth = document.getElementById("dsize-depth") as HTMLInputElement;
+    if (storedSize == "dsize") dsizeRadio.checked = true;
+    if (storedSizeDepth) dsizeDepth.value = storedSizeDepth;
+
+    return {
+        dateStart,
+        dateEnd,
+        regionSelector,
+        areaDsizeRadio: [areaRadio, dsizeRadio],
+        dsizeDepth
+    };
 }
 
 /**
@@ -121,6 +137,20 @@ function adjustRegion(ol: OlObjects, controls: Controls): void {
     Cookie.setCookie("region", name, Cookie.TTL);
 }
 
+
+/**
+ * Update controls after sie type has been updated.
+ * @param controls: Controls
+ */
+function adjustSize(controls: Controls): void {
+    let size = "area";
+    if (controls.areaDsizeRadio[1].checked) {
+        size = "dsize";
+        Cookie.setCookie("sizeDepth", controls.dsizeDepth.value, Cookie.TTL);
+    }
+    Cookie.setCookie("size", size, Cookie.TTL);
+}
+
 /**
  * Controls visibility of a warning stating that no results were found.
  * @param state: Whether to show warning of no results or not.
@@ -130,4 +160,13 @@ function showEmptyBox(state: boolean): void {
     emptyBox.style.display = state ? 'block' : 'none';
 }
 
-export {Controls, initControls, adjustRangeStart, adjustRangeEnd, addRegion, adjustRegion, getDate, showEmptyBox};
+export {
+    Controls,
+    initControls,
+    adjustRangeStart,
+    adjustRangeEnd,
+    addRegion,
+    adjustRegion,
+    adjustSize,
+    showEmptyBox
+};

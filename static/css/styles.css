@@ -98,9 +98,22 @@ input, select {
     width: 300px;
 }
 
+#size-selector-legend {
+    display: inline;
+    vertical-align: top;
+}
+
+#size-selector-radio {
+    display: inline-block;
+}
+
 #charts-timeline {
     width: 100%;
     height: 40vh;
+}
+
+#dsize-depth {
+    text-align: right;
 }
 
 #charts-size, #charts-height {
