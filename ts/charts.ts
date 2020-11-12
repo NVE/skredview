@@ -17,7 +17,6 @@ interface Charts {
 const SIZE_CATEGORIES = ["< 10.000 m²", "< 50.000 m²", "< 100.000 m²", "< 500.000 m²", "≥ 500.000 m²"];
 const DSIZE_CATEGORIES = ["D1", "D2", "D3", "D4", "D5"];
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-const EXPOSITIONS_NO = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
 const D_SIZE = "Debris area";
 const D_HEIGHT = "Debris elevation";
 const A_TIME = "Avalanche Timeline";
@@ -517,9 +516,9 @@ function calculateHeight(features: Feature[], charts: Charts, controls: Controls
 function calculateExposition(features: Feature[], charts: Charts, controls: Controls) {
     let series = charts.exposition.series[0];
     features.forEach((feature) => {
-        let aspect = feature.get("eksposisjonUtlosningsomr");
-        let idx = EXPOSITIONS_NO.indexOf(aspect);
-        if (idx != -1) {
+        let aspect = parseInt(feature.get("eksposisjonUtlopsomr"), 10);
+        if (!isNaN(aspect)) {
+            let idx = (Math.floor((aspect + 22.5) / (360 / 8)) % 8 + 8) % 8;
             let dataPoint = series.data[idx].y;
             series.data[idx].update({y: dataPoint + 1}, false);
         }
@@ -685,7 +684,6 @@ function getSizeOffset_(feature: Feature, controls: Controls): number {
 
 export {
     EXPOSITIONS,
-    EXPOSITIONS_NO,
     Charts,
     initCharts,
     calculateTimelineEvent,

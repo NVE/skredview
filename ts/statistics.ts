@@ -1,6 +1,6 @@
 import {getPrecision, OlObjects} from "./ol";
 import Feature from "ol/Feature";
-import {EXPOSITIONS, EXPOSITIONS_NO} from "./charts";
+import {EXPOSITIONS} from "./charts";
 
 function calculateStatistics(ol: OlObjects): void {
     let div = document.getElementById("statistics");
@@ -24,8 +24,8 @@ function calculateStatistics(ol: OlObjects): void {
     let areas = events.map((event: Feature) => parseInt(event.get("area"))).sort();
     let aspects = [0, 0, 0, 0, 0, 0, 0, 0];
     events.map((event: Feature) => {
-        let idx = EXPOSITIONS_NO.indexOf(event.get("eksposisjonUtlosningsomr"));
-        return idx >= 0 ? idx : null;
+        let aspect = parseInt(event.get("eksposisjonUtlopsomr"), 10);
+        return !isNaN(aspect) ? (Math.floor((aspect + 22.5) / (360 / 8)) % 8 + 8) % 8 : null;
     }).filter((idx) => idx !== null).forEach((idx) => {
         aspects[idx] += 1;
     });

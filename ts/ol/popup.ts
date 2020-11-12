@@ -6,7 +6,6 @@ import Overlay from "ol/Overlay";
 import GeoJSON from "ol/format/GeoJSON";
 
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-const EXPOSITIONS_NO = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"];
 
 function setPopup(coordinate: Coordinate, feature: Feature, ol: OlObjects) {
     let [overlay, content] = ol.popupOverlay;
@@ -59,7 +58,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     let avalId = event.get("skredID");
     let avalDate = event.get("skredTidspunkt");
     let precAvalDate = event.get("noySkredTidspunkt");
-    let aspect = event.get("eksposisjonUtlosningsomr");
+    let aspect = parseInt(event.get("eksposisjonUtlopsomr"), 10);
     let area = event.get("area");
     let stopHeight = event.get("hoydeStoppSkred_moh");
     let precStopHeight = event.get("noyHoydeStoppSkred");
@@ -70,7 +69,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     let minSlope = event.get("minHelningUtlopsomr_gr");
     let maxSlope = event.get("maksHelningUtlopsomr_gr");
 
-    let aspectIdx = EXPOSITIONS_NO.indexOf(aspect);
+    let aspectIdx = !isNaN(aspect) ? (Math.floor((aspect + 22.5) / (360 / 8)) % 8 + 8) % 8 : -1;
 
     if (avalId) htmlText.push(`${title("Avalanche ID:")} ${avalId}`);
     if (avalDate) {
