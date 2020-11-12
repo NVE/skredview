@@ -46,10 +46,13 @@ def pool(connection_string):
 
 
 app = Flask(__name__, static_folder='../static', static_url_path='/static')
-sql = pool('Driver={Driver};'
-           'Server=db.example.com;'
-           'Database=acme;'
-           'Trusted_Connection=yes;')
+sql = pool(f'Driver={{{SETTINGS["DB_DRIVER"]}}};'
+           f'Server={SETTINGS["DB_HOST"]};'
+           f'Database={SETTINGS["DB_DATABASE"]};'
+           f'DOMAIN={SETTINGS["DB_DOMAIN"]};'
+           f'UID={SETTINGS["DB_USERNAME"]};'
+           f'PWD={SETTINGS["DB_PASSWORD"]};'
+           f'Trusted_Connection={"yes" if SETTINGS["DB_TRUSTED"] else "no"};')
 
 
 @app.route('/')
