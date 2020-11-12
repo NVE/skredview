@@ -7,6 +7,7 @@ import geopandas as gpd
 import pyodbc
 import re
 import requests
+import sys
 import datetime as dt
 import multiprocessing
 import contextlib
@@ -270,4 +271,5 @@ def geo_query(q, params, reinit=False, delay=None):
 
 
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=80, threads=20)
+    port = int(sys.argv[1])
+    serve(app, host='0.0.0.0', port=port, threads=20)
