@@ -100,19 +100,21 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
 
     container.innerHTML = htmlText.join("<br>\n") + "<br>\n";
 
-    let clipboardRef = document.createElement("a");
-    clipboardRef.href="#";
-    clipboardRef.innerHTML = "Click to copy feature.";
-    clipboardRef.onclick = () => {
-        let jsonFeature = new GeoJSON().writeFeatureObject(event);
-        navigator.clipboard.writeText(JSON.stringify(jsonFeature, null, 4)).then(() => {
-            clipboardRef.innerHTML = "Feature copied to clipboard!";
-        }, () => {
-            clipboardRef.innerHTML = "Failed to copy to clipboard!";
-        });
-        return false;
-    };
-    container.appendChild(clipboardRef);
+    if (navigator.clipboard) {
+        let clipboardRef = document.createElement("a");
+        clipboardRef.href = "#";
+        clipboardRef.innerHTML = "Click to copy feature.";
+        clipboardRef.onclick = () => {
+            let jsonFeature = new GeoJSON().writeFeatureObject(event);
+            navigator.clipboard.writeText(JSON.stringify(jsonFeature, null, 4)).then(() => {
+                clipboardRef.innerHTML = "Feature copied to clipboard!";
+            }, () => {
+                clipboardRef.innerHTML = "Failed to copy to clipboard!";
+            });
+            return false;
+        };
+        container.appendChild(clipboardRef);
+    }
 
     return container;
 }
