@@ -17,10 +17,10 @@ interface Charts {
 const SIZE_CATEGORIES = ["< 10.000 m²", "< 50.000 m²", "< 100.000 m²", "< 500.000 m²", "≥ 500.000 m²"];
 const DSIZE_CATEGORIES = ["D1", "D2", "D3", "D4", "D5"];
 const EXPOSITIONS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-const D_SIZE = "Debris area";
-const D_HEIGHT = "Debris elevation";
+const D_SIZE = "Debris Area";
+const D_HEIGHT = "Debris Elevation";
 const A_TIME = "Avalanche Timeline";
-const EXPOSITION = "Debris Exposition";
+const EXPOSITION = "Debris Aspect";
 
 /**
  * Create all the charts available in the page. Initializes all y-values to 0.
@@ -106,7 +106,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "precision",
                 tooltip: {
                     pointFormat: `<span style="${precTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 0,
             },
             {
                 name: 'Precision ≤ 48 h',
@@ -118,7 +119,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "precision",
                 tooltip: {
                     pointFormat: `<span style="${precTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 1,
             },
             {
                 name: 'Precision > 48 h',
@@ -130,7 +132,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "precision",
                 tooltip: {
                     pointFormat: `<span style="${precTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 3,
             },
             {
                 name: 'Size ≥ 500.000 m²',
@@ -142,7 +145,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "size",
                 tooltip: {
                     pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 7,
             },
             {
                 name: 'Size < 500.000 m²',
@@ -154,7 +158,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "size",
                 tooltip: {
                     pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 6,
             },
             {
                 name: 'Size < 100.000 m²',
@@ -166,7 +171,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "size",
                 tooltip: {
                     pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 5,
             },
             {
                 name: 'Size < 50.000 m²',
@@ -178,7 +184,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "size",
                 tooltip: {
                     pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 4,
             },
             {
                 name: 'Size < 10.000 m²',
@@ -190,7 +197,8 @@ function initCharts(controls: Controls): Charts {
                 stack: "size",
                 tooltip: {
                     pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`
-                }
+                },
+                legendIndex: 3,
             },
         ]
     }, () => null);
@@ -249,7 +257,7 @@ function initCharts(controls: Controls): Charts {
                 data: emptyArray_(SIZE_CATEGORIES.length, 0),
                 type: "column",
                 color: COLORS.SIZE_10_000,
-                borderColor: new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get(),
+                borderColor: sizeBorderColor,
                 borderWidth: 1,
                 showInLegend: false,
             },
@@ -258,7 +266,7 @@ function initCharts(controls: Controls): Charts {
                 data: emptyArray_(SIZE_CATEGORIES.length, 0),
                 type: "column",
                 color: COLORS.SIZE_50_000,
-                borderColor: new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get(),
+                borderColor: sizeBorderColor,
                 borderWidth: 1,
                 showInLegend: false,
             },
@@ -267,7 +275,7 @@ function initCharts(controls: Controls): Charts {
                 data: emptyArray_(SIZE_CATEGORIES.length, 0),
                 type: "column",
                 color: COLORS.SIZE_100_000,
-                borderColor: new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get(),
+                borderColor: sizeBorderColor,
                 borderWidth: 1,
                 showInLegend: false,
             },
@@ -276,7 +284,7 @@ function initCharts(controls: Controls): Charts {
                 data: emptyArray_(SIZE_CATEGORIES.length, 0),
                 type: "column",
                 color: COLORS.SIZE_500_000,
-                borderColor: new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get(),
+                borderColor: sizeBorderColor,
                 borderWidth: 1,
                 showInLegend: false,
             },
@@ -285,7 +293,7 @@ function initCharts(controls: Controls): Charts {
                 data: emptyArray_(SIZE_CATEGORIES.length, 0),
                 type: "column",
                 color: COLORS.SIZE_MAX,
-                borderColor: new Highcharts.Color(COLORS.BORDER_SIZE.toString()).setOpacity(VECTOR_OPACITY).get(),
+                borderColor: sizeBorderColor,
                 borderWidth: 1,
                 showInLegend: false,
             },
@@ -308,8 +316,9 @@ function initCharts(controls: Controls): Charts {
         plotOptions: {
             bar: {
                 pointPadding: 0.1,
-                groupPadding: 0.1
-            }
+                groupPadding: 0.1,
+                stacking: 'normal',
+            },
         },
         xAxis: {
             categories: [],
@@ -344,10 +353,52 @@ function initCharts(controls: Controls): Charts {
         },
         series: [
             {
-                name: 'Detected avalanches',
+                name: 'Size ≥ 500.000 m²',
                 data: [],
                 type: "bar",
-                color: COLORS.HEIGHT,
+                color: COLORS.SIZE_MAX,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+                showInLegend: false,
+                pointPlacement: 'between',
+            },
+            {
+                name: 'Size < 500.000 m²',
+                data: [],
+                type: "bar",
+                color: COLORS.SIZE_500_000,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+                showInLegend: false,
+                pointPlacement: 'between',
+            },
+            {
+                name: 'Size < 100.000 m²',
+                data: [],
+                type: "bar",
+                color: COLORS.SIZE_100_000,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+                showInLegend: false,
+                pointPlacement: 'between',
+            },
+            {
+                name: 'Size < 50.000 m²',
+                data: [],
+                type: "bar",
+                color: COLORS.SIZE_50_000,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+                showInLegend: false,
+                pointPlacement: 'between',
+            },
+            {
+                name: 'Size < 10.000 m²',
+                data: [],
+                type: "bar",
+                color: COLORS.SIZE_10_000,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
                 showInLegend: false,
                 pointPlacement: 'between',
             },
@@ -389,25 +440,68 @@ function initCharts(controls: Controls): Charts {
             column: {
                 pointPadding: 0,
                 groupPadding: 0,
+                stacking: 'normal',
             }
         },
         tooltip: {
             headerFormat: '<span style="font-size: 12px">{point.key}</span><br/>',
-            pointFormat: `<span style="${basicTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`,
+            pointFormat: `<span style="${sizeTooltipStyle}">●</span> {series.name}: <b>{point.y}</b><br/>`,
             style: {
                 fontSize: '14px'
             }
         },
         series: [
             {
-                name: "Exposition",
+                name: 'Size ≥ 500.000 m²',
                 data: emptyArray_(EXPOSITIONS.length, 0),
                 type: "column",
-                color: COLORS.EXPOSITION,
+                color: COLORS.SIZE_MAX,
                 pointPlacement: 'on',
                 showInLegend: false,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
             },
-        ]
+            {
+                name: 'Size < 500.000 m²',
+                data: emptyArray_(EXPOSITIONS.length, 0),
+                type: "column",
+                color: COLORS.SIZE_500_000,
+                pointPlacement: 'on',
+                showInLegend: false,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+            },
+            {
+                name: 'Size < 100.000 m²',
+                data: emptyArray_(EXPOSITIONS.length, 0),
+                type: "column",
+                color: COLORS.SIZE_100_000,
+                pointPlacement: 'on',
+                showInLegend: false,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+            },
+            {
+                name: 'Size < 50.000 m²',
+                data: emptyArray_(EXPOSITIONS.length, 0),
+                type: "column",
+                color: COLORS.SIZE_50_000,
+                pointPlacement: 'on',
+                showInLegend: false,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+            },
+            {
+                name: 'Size < 10.000 m²',
+                data: emptyArray_(EXPOSITIONS.length, 0),
+                type: "column",
+                color: COLORS.SIZE_10_000,
+                pointPlacement: 'on',
+                showInLegend: false,
+                borderColor: sizeBorderColor,
+                borderWidth: 1,
+            },
+        ],
     }, () => null);
 
     return {
@@ -491,17 +585,21 @@ function calculateSize(features: Feature[], charts: Charts, controls: Controls) 
  */
 function calculateHeight(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
+        let offset = charts.height.series.length - 1 - getSizeOffset_(feature, controls);
+        let series = charts.height.series[offset];
+
         let height = feature.get('hoydeStoppSkred_moh');
-        let series = charts.height.series[0];
-        let offset = Math.floor(height / 200);
-        while (series.xAxis.categories.length < offset + 1) {
+        let idx = Math.floor(height / 200);
+        while (series.xAxis.categories.length < idx + 1) {
             let categories = series.xAxis.categories;
             let newCategory = `${categories.length * 200} m.a.s.l.`;
             series.xAxis.setCategories(categories.concat([newCategory]));
+        }
+        while (series.data.length < idx + 1) {
             series.setData(series.data.map(p => p.y).concat([0]));
         }
-        let dataPoint = series.data[offset].y;
-        series.data[offset].update({y: dataPoint + 1}, false);
+        let dataPoint = series.data[idx].y;
+        series.data[idx].update({y: dataPoint + 1}, false);
     });
 
     charts.height.redraw();
@@ -514,8 +612,10 @@ function calculateHeight(features: Feature[], charts: Charts, controls: Controls
  * @param controls: Controls
  */
 function calculateExposition(features: Feature[], charts: Charts, controls: Controls) {
-    let series = charts.exposition.series[0];
     features.forEach((feature) => {
+        let offset = charts.exposition.series.length - 1 - getSizeOffset_(feature, controls);
+        let series = charts.exposition.series[offset];
+
         let aspect = parseInt(feature.get("eksposisjonUtlopsomr"), 10);
         if (!isNaN(aspect)) {
             let idx = (Math.floor((aspect + 22.5) / (360 / 8)) % 8 + 8) % 8;
@@ -524,7 +624,17 @@ function calculateExposition(features: Feature[], charts: Charts, controls: Cont
         }
     });
 
-    let max = Math.max(...series.data.map((p) => p.y));
+    // Find the height of the tallest column in the compass (to set scale after).
+    let max = Math.max(...charts.exposition.series.map((series) =>
+        series.data.map((p) => p.y)
+    ).reduce((seriesA, seriesB) => {
+        let sum = [];
+        for (let i = 0; i < seriesA.length; i++) {
+            sum.push(seriesA[i] + seriesB[i]);
+        }
+        return sum
+    }, emptyArray_(charts.exposition.series[0].data.length, 0)));
+
     charts.exposition.yAxis[0].setExtremes(0, max + 1);
 }
 
@@ -537,8 +647,8 @@ function calculateExposition(features: Feature[], charts: Charts, controls: Cont
 function clearStatistics(redraw: boolean, charts: Charts, controls: Controls) {
     clearTimeline(true, true, redraw, charts, controls);
     clearSize(redraw, charts, controls);
-    clearHeight(redraw, charts);
-    clearExposition(redraw, charts);
+    clearHeight(redraw, charts, controls);
+    clearExposition(redraw, charts, controls);
 }
 
 /**
@@ -581,12 +691,7 @@ function updateTimelineDates(charts: Charts, controls: Controls, ol: OlObjects) 
  * @param charts: Charts
  */
 function clearTimeline(precision: boolean, size: boolean, redraw: boolean, charts: Charts, controls: Controls) {
-    let categories;
-    if (controls.areaDsizeRadio[0].checked) {
-        categories = SIZE_CATEGORIES;
-    } else {
-        categories = DSIZE_CATEGORIES;
-    }
+    let categories = getCategories_(controls);
     if (precision) {
         for (let idx of [0, 1, 2]) {
             let series = charts.timeline.series[idx];
@@ -611,14 +716,10 @@ function clearTimeline(precision: boolean, size: boolean, redraw: boolean, chart
  * @param controls: Controls
  */
 function clearSize(redraw: boolean, charts: Charts, controls: Controls) {
-    let categories;
-    if (controls.areaDsizeRadio[0].checked) {
-        categories = SIZE_CATEGORIES;
-    } else {
-        categories = DSIZE_CATEGORIES;
-    }
-    charts.size.series.forEach((series) => {
+    let categories = getCategories_(controls);
+    charts.size.series.forEach((series,idx) => {
         series.setData(emptyArray_(categories.length, 0), false);
+        series.update({type: "column", name: categories[idx]}, false);
     });
     charts.size.xAxis[0].setCategories(categories, redraw);
 }
@@ -628,10 +729,14 @@ function clearSize(redraw: boolean, charts: Charts, controls: Controls) {
  * @param redraw: boolean - Whether to redraw the chart.
  * @param charts: Charts
  */
-function clearHeight(redraw: boolean, charts: Charts) {
-    let series = charts.height.series[0];
-    series.setData([], false);
-    series.xAxis.setCategories([], redraw);
+function clearHeight(redraw: boolean, charts: Charts, controls: Controls) {
+    let categories = getCategories_(controls).reverse();
+    charts.height.series.forEach((series, idx) => {
+        series.update({type: "bar", name: categories[idx]}, false);
+        series.setData([], false);
+        series.xAxis.setCategories([], false);
+    });
+    charts.height.redraw()
 }
 
 /**
@@ -639,11 +744,13 @@ function clearHeight(redraw: boolean, charts: Charts) {
  * @param redraw: boolean - Whether to redraw the chart.
  * @param charts: Charts
  */
-function clearExposition(redraw: boolean, charts: Charts) {
-    charts.exposition.series.forEach((series) => {
-        series.setData(emptyArray_(EXPOSITIONS.length, 0), redraw);
+function clearExposition(redraw: boolean, charts: Charts, controls: Controls) {
+    let categories = getCategories_(controls).reverse();
+    charts.exposition.series.forEach((series, idx) => {
+        series.update({type: "column", name: categories[idx]}, false);
+        series.setData(emptyArray_(8, 0), false);
     });
-    charts.exposition.yAxis[0].setExtremes(0, 1);
+    charts.exposition.yAxis[0].setExtremes(0, 1, redraw);
 }
 
 function emptyArray_(size: number, value: number): Array<number> {
@@ -679,6 +786,14 @@ function getSizeOffset_(feature: Feature, controls: Controls): number {
         } else {
             return 4;
         }
+    }
+}
+
+function getCategories_(controls: Controls) {
+    if (controls.areaDsizeRadio[0].checked) {
+        return SIZE_CATEGORIES.slice();
+    } else {
+        return DSIZE_CATEGORIES.slice();
     }
 }
 

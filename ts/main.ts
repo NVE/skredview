@@ -29,8 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (complete) Controls.showEmptyBox(!clusterSource.getSource().getFeatures().length);
         Charts.calculateTimelineCluster(newFeatures, charts, controls);
     };
-    Charts.clearSize(true, charts, controls);
-    Charts.clearTimeline(false, true, true, charts, controls);
+    Charts.clearStatistics(false, charts, controls);
     Ol.getCluster(ol, controls, clusterClosure);
     Ol.getEvents(ol, controls, eventClosure);
 
@@ -40,8 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         Ol.resetVectors(false, true, ol, controls);
         Charts.updateTimelineDates(charts, controls, ol);
         Charts.clearSize(false, charts, controls);
-        Charts.clearHeight(false, charts);
-        Charts.clearExposition(false, charts);
+        Charts.clearHeight(false, charts, controls);
+        Charts.clearExposition(false, charts, controls);
         Statistics.clearStatistics();
         Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
@@ -121,15 +120,23 @@ document.addEventListener('DOMContentLoaded', () => {
     controls.areaDsizeRadio[0].oninput = () => {
         Controls.adjustSize(controls);
         let features = [];
+        let clusters = [];
         for (let dateString of Object.keys(ol.eventsByDate)) {
             for (let id of Object.keys(ol.eventsByDate[dateString])) {
                 features.push(ol.eventsByDate[dateString][id]);
             }
         }
-        Charts.clearTimeline(false, true, false, charts, controls);
+        for (let dateString of Object.keys(ol.clustersByDate)) {
+            for (let id of Object.keys(ol.clustersByDate[dateString])) {
+                clusters.push(ol.clustersByDate[dateString][id]);
+            }
+        }
+        Charts.clearStatistics(false, charts, controls);
+        Charts.calculateTimelineCluster(clusters, charts, controls);
         Charts.calculateTimelineEvent(features, charts, controls);
-        Charts.clearSize(false, charts, controls);
         Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
+        Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
+        Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
     };
     controls.areaDsizeRadio[1].oninput = () => {
         controls.areaDsizeRadio[0].dispatchEvent(new Event("input"));
