@@ -40,8 +40,7 @@ function createPopupOverlay(ol: OlObjects): [Overlay, HTMLDivElement] {
 function formatEventInfo_(event: Feature): HTMLDivElement {
     let container = document.createElement("div");
 
-    let htmlText: string[] = [];
-    let title = (text: string) => `<span class="bold">${text}</span>`;
+    let htmlText: [string, string][] = [];
     let precision = (dbText: string) => ({
         "4 timer": 4,
         "6 timer": 6,
@@ -59,46 +58,48 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     let avalDate = event.get("skredTidspunkt");
     let precAvalDate = event.get("noySkredTidspunkt");
     let aspect = parseInt(event.get("eksposisjonUtlopsomr"), 10);
-    let area = event.get("area");
-    let stopHeight = event.get("hoydeStoppSkred_moh");
+    let area = Math.round(event.get("area")).toLocaleString("no-NO");
+    let stopHeight = Math.round(event.get("hoydeStoppSkred_moh")).toLocaleString("no-NO");
     let precStopHeight = event.get("noyHoydeStoppSkred");
     let regStatus = event.get("regStatus");
     let regDate = event.get("registrertDato");
     let changeDate = event.get("endretDato");
-    let meanSlope = event.get("snittHelningUtlopssomr_gr");
-    let minSlope = event.get("minHelningUtlopsomr_gr");
-    let maxSlope = event.get("maksHelningUtlopsomr_gr");
+    let meanSlope = Math.round(event.get("snittHelningUtlopssomr_gr")).toLocaleString("no-NO");
+    let minSlope = Math.round(event.get("minHelningUtlopsomr_gr")).toLocaleString("no-NO");
+    let maxSlope = Math.round(event.get("maksHelningUtlopsomr_gr")).toLocaleString("no-NO");
 
     let aspectIdx = !isNaN(aspect) ? (Math.floor((aspect + 22.5) / (360 / 8)) % 8 + 8) % 8 : -1;
 
-    if (avalId) htmlText.push(`${title("Avalanche ID:")} ${avalId}`);
+    if (avalId) htmlText.push(["Avalanche ID:", avalId]);
     if (avalDate) {
         let dateString = new Date(avalDate).toLocaleDateString("no-NO", TIME_FORMAT);
         if (precAvalDate) dateString += ` ± ${precision(precAvalDate)}&nbsph`;
-        htmlText.push(`${title("Triggered:")} ${dateString}`);
+        htmlText.push(["Triggered:", dateString]);
     }
-    if (aspectIdx != -1) htmlText.push(`${title("Exposition:")} ${EXPOSITIONS[aspectIdx]}`);
-    if (area) htmlText.push(`${title("Area:")} ${Math.round(area)}&nbspm²`);
+    if (aspectIdx != -1) htmlText.push(["Exposition:", EXPOSITIONS[aspectIdx]]);
+    if (area) htmlText.push(["Area:", `${area}&nbspm²`]);
     if (stopHeight) {
         let height = `${stopHeight}&nbspm.a.s.l.`;
         if (precStopHeight) height = `${height} ± ${precStopHeight.slice(0, -1)}&nbspm.`;
-        htmlText.push(`${title("Stop height:")} ${height}`);
+        htmlText.push(["Stop height:", height]);
     }
-    if (meanSlope) htmlText.push(`${title("Mean slope:")} ${meanSlope}º`);
+    if (meanSlope) htmlText.push(["Mean slope:", `${meanSlope}º`]);
     if (minSlope !== null && maxSlope !== null) {
-        htmlText.push(`${title("Slope:")} ${maxSlope}º–${minSlope}º`);
+        htmlText.push(["Slope:", `${maxSlope}º–${minSlope}º`]);
     }
-    if (regStatus) htmlText.push(`${title("Registration:")} ${status(regStatus)}`);
+    if (regStatus) htmlText.push(["Registration:", status(regStatus)]);
     if (regDate) {
         let dateString = new Date(regDate).toLocaleDateString("no-NO", TIME_FORMAT);
-        htmlText.push(`${title("Registered:")} ${dateString}`);
+        htmlText.push(["Registered:", dateString]);
     }
     if (changeDate && regDate != changeDate) {
         let dateString = new Date(changeDate).toLocaleDateString("no-NO", TIME_FORMAT);
-        htmlText.push(`${title("Last edited:")} ${dateString}`);
+        htmlText.push(["Last edited:", dateString]);
     }
 
-    container.innerHTML = htmlText.join("<br>\n") + "<br>\n";
+    container.innerHTML = `<table>${htmlText.map((row) =>
+        `<tr><th>${row[0]}</th><td>${row[1]}</td></tr>`
+    ).join("\n")}</table>`;
 
     if (navigator.clipboard) {
         let clipboardRef = document.createElement("a");

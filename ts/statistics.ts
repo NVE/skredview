@@ -33,12 +33,14 @@ function calculateStatistics(ol: OlObjects): void {
 
     let median = len % 2 == 0 ? (areas[len / 2] + areas[len / 2 - 1]) / 2 : areas[Math.floor(len / 2)];
     let mean = areas.reduce((x, y) => x + y) / (areas.length);
-    statAvalanchesAll.innerText = events.length.toString();
-    statAvalanches24h.innerText = events.filter((event: Feature) => getPrecision(event) < 24).length.toString();
-    statSizeMedian.innerText = median.toFixed(0);
-    statSizeMean.innerText = mean.toFixed(0);
-    statSizeMin.innerText = Math.min(...areas).toFixed(0);
-    statSizeMax.innerText = Math.max(...areas).toFixed(0);
+    statAvalanchesAll.innerText = events.length.toLocaleString("no-NO");
+    statAvalanches24h.innerText = events.filter((event: Feature) => getPrecision(event) < 24)
+        .length
+        .toLocaleString("no-NO");
+    statSizeMedian.innerText = Math.round(median).toLocaleString("no-NO");
+    statSizeMean.innerText = Math.round(mean).toLocaleString("no-NO");
+    statSizeMin.innerText = Math.round(Math.min(...areas)).toLocaleString("no-NO");
+    statSizeMax.innerText = Math.round(Math.max(...areas)).toLocaleString("no-NO");
     statAspectMedian.innerText = medianAspect;
 }
 
