@@ -134,11 +134,12 @@ input, select {
     margin-bottom: 20px;
 }
 
-.bold, td:first-child {
+.bold, th {
     font-weight: 700;
+    text-align: left;
 }
 
-td:nth-child(2) {
+#statistics table tbody tr td:nth-child(2) {
     text-align: right;
 }
 
