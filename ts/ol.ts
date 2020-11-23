@@ -562,7 +562,7 @@ function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Contro
             } else if (!keep && storedNotRegion && storedNotRegion.indexOf(name) != -1) {
                 return feature;
             } else if (!storedNotRegion || storedNotRegion.indexOf(name) == -1) {
-                let date = getDate(new Date(db2Date(feature.get("skredTidspunkt"))));
+                let date = getDate(db2Date(feature.get("skredTidspunkt")));
                 let id = feature.get("skredID");
                 let evalFeature = feature;
                 if (date in ol.clustersByDate && id in ol.clustersByDate[date]) {
