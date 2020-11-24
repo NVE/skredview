@@ -1,5 +1,5 @@
 import {OlObjects} from "../ol";
-import {TIME_FORMAT} from "../date";
+import {TIME_FORMAT, db2Date} from "../date";
 import Feature from "ol/Feature";
 import {Coordinate} from "ol/coordinate";
 import Overlay from "ol/Overlay";
@@ -55,15 +55,15 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     } as Record<string, string>)[dbText];
 
     let avalId = event.get("skredID");
-    let avalDate = event.get("skredTidspunkt");
+    let avalDate = db2Date(event.get("skredTidspunkt"));
     let precAvalDate = event.get("noySkredTidspunkt");
     let aspect = parseInt(event.get("eksposisjonUtlopsomr"), 10);
     let area = Math.round(event.get("area")).toLocaleString("no-NO");
     let stopHeight = Math.round(event.get("hoydeStoppSkred_moh")).toLocaleString("no-NO");
     let precStopHeight = event.get("noyHoydeStoppSkred");
     let regStatus = event.get("regStatus");
-    let regDate = event.get("registrertDato");
-    let changeDate = event.get("endretDato");
+    let regDate = db2Date(event.get("registrertDato"));
+    let changeDate = db2Date(event.get("endretDato"));
     let meanSlope = Math.round(event.get("snittHelningUtlopssomr_gr")).toLocaleString("no-NO");
     let minSlope = Math.round(event.get("minHelningUtlopsomr_gr")).toLocaleString("no-NO");
     let maxSlope = Math.round(event.get("maksHelningUtlopsomr_gr")).toLocaleString("no-NO");
@@ -72,7 +72,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
 
     if (avalId) htmlText.push(["Avalanche ID:", avalId]);
     if (avalDate) {
-        let dateString = new Date(avalDate).toLocaleDateString("no-NO", TIME_FORMAT);
+        let dateString = avalDate.toLocaleDateString("no-NO", TIME_FORMAT);
         if (precAvalDate) dateString += ` ± ${precision(precAvalDate)}&nbsph`;
         htmlText.push(["Triggered:", dateString]);
     }
@@ -89,11 +89,11 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     }
     if (regStatus) htmlText.push(["Registration:", status(regStatus)]);
     if (regDate) {
-        let dateString = new Date(regDate).toLocaleDateString("no-NO", TIME_FORMAT);
+        let dateString = regDate.toLocaleDateString("no-NO", TIME_FORMAT);
         htmlText.push(["Registered:", dateString]);
     }
     if (changeDate && regDate != changeDate) {
-        let dateString = new Date(changeDate).toLocaleDateString("no-NO", TIME_FORMAT);
+        let dateString = changeDate.toLocaleDateString("no-NO", TIME_FORMAT);
         htmlText.push(["Last edited:", dateString]);
     }
 

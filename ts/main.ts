@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     Charts.clearStatistics(false, charts, controls);
     Ol.getCluster(ol, controls, clusterClosure);
     Ol.getEvents(ol, controls, eventClosure);
-
     let dateChangeClosure = () => {
         Popup.setPopup(undefined, null, ol);
         Controls.showEmptyBox(false);

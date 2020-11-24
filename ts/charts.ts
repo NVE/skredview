@@ -1,7 +1,7 @@
 import * as Highcharts from 'highcharts';
 import * as HighchartsMore from "highcharts/highcharts-more";
 import {Controls} from "./controls";
-import {dateRange} from "./date";
+import {dateRange, db2Date} from "./date";
 import {COLORS, VECTOR_OPACITY} from "./color";
 import {OlObjects, getPrecision} from "./ol";
 import Feature from "ol/Feature";
@@ -520,7 +520,7 @@ function initCharts(controls: Controls): Charts {
  */
 function calculateTimelineEvent(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
-        let date = new Date(feature.get('skredTidspunkt'));
+        let date = db2Date(feature.get('skredTidspunkt'));
         date.setHours(0, 0, 0, 0);
         let dateStart = new Date(controls.dateStart.value);
         let offset = Math.round((date.getTime() - dateStart.getTime()) / (1000 * 3600 * 24));
@@ -539,7 +539,7 @@ function calculateTimelineEvent(features: Feature[], charts: Charts, controls: C
  */
 function calculateTimelineCluster(features: Feature[], charts: Charts, controls: Controls) {
     features.forEach((feature) => {
-        let date = new Date(feature.get('skredTidspunkt'));
+        let date = db2Date(feature.get('skredTidspunkt'));
         date.setHours(0, 0, 0, 0);
         let dateStart = new Date(controls.dateStart.value);
         let offset = Math.round((date.getTime() - dateStart.getTime()) / (1000 * 3600 * 24));

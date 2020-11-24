@@ -1,5 +1,5 @@
 import {addRegion, Controls} from "./controls";
-import {dateRange, getDate} from "./date";
+import {dateRange, getDate, db2Date} from "./date";
 import {get} from "./network";
 import * as Cookie from "./cookie";
 import * as Layer from "./ol/layer";
@@ -330,7 +330,7 @@ function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, c
         }
         let featuresToRemove = filterArrayByRegions_(features, false, controls, ol);
         featuresToRemove.forEach((feature) => {
-            let date = getDate(new Date(feature.get("skredTidspunkt")));
+            let date = getDate(db2Date(feature.get("skredTidspunkt")));
             let id = feature.get("skredID");
             delete ol.clustersByDate[date][id];
             if (!Object.keys(ol.clustersByDate[date]).length) delete ol.clustersByDate[date];
@@ -456,7 +456,7 @@ function getVector_(
 
         let geoJson = new GeoJSON();
         json.features.forEach((geoJsonFeature: GeoJSONFeature) => {
-            let dateString = getDate(new Date(geoJsonFeature.properties.skredTidspunkt));
+            let dateString = getDate(db2Date(geoJsonFeature.properties.skredTidspunkt));
             let id = geoJsonFeature.properties.skredID;
             let exists = existMap[dateString] && existMap[dateString][geoJsonFeature.properties.skredID];
             if (!exists) {
@@ -516,7 +516,7 @@ function filter_(
 ) {
     let filtered = filterArrayByRegions_(newEvents, true, controls, ol);
     filtered.forEach((feature) => {
-        let dateString = getDate(new Date(feature.get("skredTidspunkt")));
+        let dateString = getDate(db2Date(feature.get("skredTidspunkt")));
         if (!(dateString in existMap)) existMap[dateString] = {};
         existMap[dateString][feature.get("skredID")] = feature;
     });
@@ -562,7 +562,7 @@ function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Contro
             } else if (!keep && storedNotRegion && storedNotRegion.indexOf(name) != -1) {
                 return feature;
             } else if (!storedNotRegion || storedNotRegion.indexOf(name) == -1) {
-                let date = getDate(new Date(feature.get("skredTidspunkt")));
+                let date = getDate(db2Date(feature.get("skredTidspunkt")));
                 let id = feature.get("skredID");
                 let evalFeature = feature;
                 if (date in ol.clustersByDate && id in ol.clustersByDate[date]) {
