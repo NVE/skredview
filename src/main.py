@@ -91,7 +91,7 @@ def events():
         LEFT JOIN skredprod.skred.UTLOPUTLOSNINGOMR AS u ON u.skredID = h.skredID
         WHERE h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND h.registrertAv = 'Sentinel-1'
+            AND h.ansvarligInstitusjon = 'NVE satellitt' AND h.objektType = 'Utlop'
             AND h.regStatus != 'Slettet'
         ORDER BY t.registrertDato DESC
     """
@@ -132,7 +132,7 @@ def events_within(w, s, e, n):
         WHERE u.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
             AND h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND h.registrertAv = 'Sentinel-1'
+            AND h.ansvarligInstitusjon = 'NVE satellitt' AND h.objektType = 'Utlop'
             AND h.regStatus != 'Slettet'
         ORDER BY t.registrertDato DESC
     """
@@ -161,7 +161,7 @@ def events_point_within():
         FROM skredprod.skred.SKREDHENDELSE AS h
         WHERE h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND h.registrertAv = 'Sentinel-1'
+            AND h.ansvarligInstitusjon = 'NVE satellitt' AND h.objektType = 'Utlop'
             AND h.regStatus != 'Slettet'
         ORDER BY h.skredTidspunkt DESC
     """
@@ -193,7 +193,7 @@ def events_point(w, s, e, n):
         WHERE h.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
             AND h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND h.registrertAv = 'Sentinel-1'
+            AND h.ansvarligInstitusjon = 'NVE satellitt' AND h.objektType = 'Utlop'
             AND h.regStatus != 'Slettet'
         ORDER BY h.skredTidspunkt DESC
     """
