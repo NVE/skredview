@@ -21,7 +21,7 @@
     "@turf/turf": "^5.1.6",
     "@types/ol": "^6.4.2",
     "@types/proj4": "^2.5.0",
-    "highcharts": "^8.2.2",
+    "highcharts": "^9.0.0",
     "ol": "^6.4.3",
     "ol-layerswitcher": "^3.8.1",
     "proj4": "^2.6.3",
