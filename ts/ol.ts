@@ -512,6 +512,7 @@ function filter_(
         let dateString = getDate(db2Date(feature.get("skredTidspunkt")));
         if (!(dateString in existMap)) existMap[dateString] = {};
         existMap[dateString][feature.get("skredID")] = feature;
+        feature.setId(feature.get("skredID"));
     });
     source.addFeatures(filtered);
     callback(filtered);
