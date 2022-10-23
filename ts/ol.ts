@@ -17,6 +17,22 @@ import Polygon from "ol/geom/Polygon";
 import * as turf from '@turf/turf';
 import Group from "ol/layer/Group";
 import ImageLayer from "ol/layer/Image";
+import { yieldingForEach } from "./loop";
+import { AllGeoJSON, Point } from "@turf/turf";
+import { Vector, WMTS } from "ol/source";
+
+interface PointApi {
+    regions: Record<string, number>
+    dates_gt48: Record<string, number>
+    dates_lte48: Record<string, number>
+    dates_lt24: Record<string, number>
+    elevations_gt48: Record<string, number>
+    elevations_lte48: Record<string, number>
+    elevations_lt24: Record<string, number>
+    expositions_gt48: Record<string, number>
+    expositions_lte48: Record<string, number>
+    expositions_lt24: Record<string, number>
+}
 
 interface OlObjects {
     // Ol Map object
@@ -24,30 +40,17 @@ interface OlObjects {
 
     // Record of avalanche polygons displayed on the map. eventsByDate['yyyy-mm-dd'][uuid]
     eventsByDate: Record<string, Record<string, Feature>>,
-    // Record of avalanche point geometries displayed on the map. clustersByDate['yyyy-mm-dd'][uuid]
-    clustersByDate: Record<string, Record<string, Feature>>,
 
     // Record cache of all avalanche polygons ever seen. eventStoredsByDate['yyyy-mm-dd'][uuid]
     eventsStoredByDate: Record<string, Record<string, Feature>>,
-    // Record cache of all point geometries ever seen. clustersStoredsByDate['yyyy-mm-dd'][uuid]
-    clustersStoredByDate: Record<string, Record<string, Feature>>,
 
     // Indicates if the event layer has started loading.
     eventsLoaded: [boolean],
-    // Indicates if the event layer has loaded completely.
-    eventsLoadStart: [boolean],
 
-    // Indicates if the cluster layer has started loading.
-    clusterLoaded: [boolean],
-    // Indicates if the cluster layer has loaded completelyz
-    clusterLoadStart: [boolean],
+    points: PointApi,
 
     // XHR used to load the event layer within frame.
     events_part_req: [XMLHttpRequest | null],
-    // XHR used to load the event layer completely.
-    events_all_req: [XMLHttpRequest | null],
-    // XHR used to load the cluster layer within frame.
-    cluster_part_req: [XMLHttpRequest | null],
     // XHR used to load the cluster layer completely.
     cluster_all_req: [XMLHttpRequest | null],
 
@@ -58,19 +61,22 @@ interface OlObjects {
     // Map of regions by their numerical IDs.
     regions: Record<number, Feature>,
 
-    baseLayerBw: TileLayer,
-    baseLayerColor: TileLayer,
-    regionLayer: VectorImageLayer,
+    baseLayerBw: TileLayer<WMTS>,
+    baseLayerColor: TileLayer<WMTS>,
+    regionLayer: VectorImageLayer<Vector>,
     // Layer containing currently selected region.
-    selectedRegionLayer: VectorImageLayer,
+    selectedRegionLayer: VectorImageLayer<Vector>,
     // Avalanche polygon layer.
-    eventLayer: VectorImageLayer,
+    eventLayer: VectorImageLayer<Vector>,
     // Avalanche cluster layer.
-    clusterLayer: VectorImageLayer,
+    clusterLayer: VectorImageLayer<Vector>,
     // Layer containing the avalanche polygon currently shown in the popup.
-    selectedEventLayer: VectorImageLayer,
+    selectedEventLayer: VectorImageLayer<Vector>,
     // Popup overlay.
     popupOverlay: [Overlay, HTMLDivElement],
+
+    // Center of each region
+    regionCenters: Record<number, Feature>
 }
 
 const CLUSTER_THRESHOLD = 11;
@@ -138,6 +144,19 @@ function initMap(controls: Controls): OlObjects {
     selectedEventLayer.setOpacity(1);
     selectedEventLayer.setZIndex(6);
 
+    let points = {
+        regions: {},
+        dates_gt48: {},
+        dates_lte48: {},
+        dates_lt24: {},
+        elevations_gt48: {},
+        elevations_lte48: {},
+        elevations_lt24: {},
+        expositions_gt48: {},
+        expositions_lte48: {},
+        expositions_lt24: {},
+    }
+
     let baseGroup = new Group({
         layers: [
             baseLayerOrtho,
@@ -169,19 +188,13 @@ function initMap(controls: Controls): OlObjects {
     let ol: OlObjects = {
         map: null,
         eventsByDate,
-        clustersByDate,
         eventsStoredByDate,
-        clustersStoredByDate,
         eventsLoaded: [false],
-        eventsLoadStart: [false],
-        clusterLoaded: [false],
-        clusterLoadStart: [false],
         events_part_req: [null],
-        events_all_req: [null],
-        cluster_part_req: [null],
         cluster_all_req: [null],
         backoff_counter_bw,
         backoff_counter_color,
+        points,
         regions,
         baseLayerBw,
         baseLayerColor,
@@ -191,6 +204,7 @@ function initMap(controls: Controls): OlObjects {
         clusterLayer,
         selectedEventLayer,
         popupOverlay: null,
+        regionCenters: {},
     };
     let [overlay, content] = Popup.createPopupOverlay(ol);
     ol.map = Layer.createMap(layers, [overlay]);
@@ -217,6 +231,10 @@ function getEvents(
     let dateStart = controls.dateStart.value as string;
     let dateEnd = controls.dateEnd.value as string;
     let bbox = ol.map.getView().calculateExtent();
+    let regionParam = "";
+    if (controls.regionSelector.value) {
+        regionParam = `&region=${controls.regionSelector.value}`
+    }
     recallVector_(
         dateRange(new Date(controls.dateStart.value), new Date(controls.dateEnd.value)),
         ol.eventsByDate,
@@ -227,14 +245,11 @@ function getEvents(
         callback,
     );
     getVector_(
-        `/api/events/polygons/within/${bbox.join('/')}/?start=${dateStart}&end=${dateEnd}`,
-        `/api/events/polygons/?start=${dateStart}&end=${dateEnd}`,
+        `/api/events/polygons/within/${bbox.join('/')}/?start=${dateStart}&end=${dateEnd}${regionParam}`,
         ol.eventsLoaded,
-        ol.eventsLoadStart,
         ol.eventsByDate,
         ol.eventsStoredByDate,
         ol.events_part_req,
-        ol.events_all_req,
         ol.eventLayer.getSource(),
         ol,
         controls,
@@ -251,35 +266,32 @@ function getEvents(
 function getCluster(
     ol: OlObjects,
     controls: Controls,
-    callback: (filtered: Feature[], complete: boolean) => void,
+    callback: (points: PointApi) => void,
 ): void {
     let dateStart = controls.dateStart.value as string;
     let dateEnd = controls.dateEnd.value as string;
-    let bbox = ol.map.getView().calculateExtent();
-    let clusterSource = ol.clusterLayer.getSource() as Cluster;
-    recallVector_(
-        dateRange(new Date(controls.dateStart.value), new Date(controls.dateEnd.value)),
-        ol.clustersByDate,
-        ol.clustersStoredByDate,
-        clusterSource.getSource(),
-        ol,
-        controls,
-        callback,
-    );
-    getVector_(
-        `/api/events/points/within/${bbox.join('/')}/?start=${dateStart}&end=${dateEnd}`,
-        `/api/events/points/?start=${dateStart}&end=${dateEnd}`,
-        ol.clusterLoaded,
-        ol.clusterLoadStart,
-        ol.clustersByDate,
-        ol.clustersStoredByDate,
-        ol.cluster_part_req,
-        ol.cluster_all_req,
-        clusterSource.getSource(),
-        ol,
-        controls,
-        callback,
-    );
+    let regionParam = "";
+    if (controls.regionSelector.value) {
+        regionParam = `&region=${controls.regionSelector.value}`
+    }
+    let url = `/api/events/points/?start=${dateStart}&end=${dateEnd}${regionParam}`
+
+    let closure = (responseText: string) => {
+        let json: PointApi = JSON.parse(responseText);
+        ol.points = json;
+
+        let clusterSource = new VectorSource();
+        Object.entries(ol.regionCenters).forEach(([region, center]) => {
+            if (json.regions[region]) {
+                center.set("size", json.regions[region]);
+                clusterSource.addFeature(center);
+            }
+        });
+        ol.clusterLayer.setSource(clusterSource);
+        return callback(json);
+    };
+
+    get(url, ol.cluster_all_req, (responseText) => closure(responseText));
 }
 
 /**
@@ -292,8 +304,6 @@ function getCluster(
 function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, controls: Controls): void {
     [
         ol.events_part_req,
-        ol.events_all_req,
-        ol.cluster_part_req,
         ol.cluster_all_req
     ].forEach((req) => {
         if (req[0]) {
@@ -301,20 +311,17 @@ function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, c
             req[0] = null;
         }
     });
-    ol.eventsLoadStart[0] = false;
     ol.eventsLoaded[0] = false;
-    ol.clusterLoadStart[0] = false;
-    ol.clusterLoaded[0] = false;
+    ol.clusterLayer.getSource().clear()
 
     let clear = false;
 
     if (!skipDates) {
         let startDate = new Date(controls.dateStart.value);
         let endDate = new Date(controls.dateEnd.value);
-        for (let dateString of Object.keys(ol.clustersByDate)) {
+        for (let dateString of Object.keys(ol.eventsByDate)) {
             let date = new Date(dateString);
             if (date.getTime() < startDate.getTime() || date.getTime() >= endDate.getTime()) {
-                delete ol.clustersByDate[dateString];
                 if (dateString in ol.eventsByDate) delete ol.eventsByDate[dateString];
                 clear = true;
             }
@@ -323,35 +330,27 @@ function resetVectors(skipDates: boolean, skipRegions: boolean, ol: OlObjects, c
 
     if (!skipRegions) {
         let features = [];
-        for (let dateString of Object.keys(ol.clustersByDate)) {
-            for (let id of Object.keys(ol.clustersByDate[dateString])) {
-                features.push(ol.clustersByDate[dateString][id]);
+        for (let dateString of Object.keys(ol.eventsByDate)) {
+            for (let id of Object.keys(ol.eventsByDate[dateString])) {
+                features.push(ol.eventsByDate[dateString][id]);
             }
         }
         let featuresToRemove = filterArrayByRegions_(features, false, controls, ol);
         featuresToRemove.forEach((feature) => {
             let date = getDate(db2Date(feature.get("skredTidspunkt")));
             let id = feature.get("skredID");
-            delete ol.clustersByDate[date][id];
-            if (!Object.keys(ol.clustersByDate[date]).length) delete ol.clustersByDate[date];
-            if (date in ol.eventsByDate && id in ol.eventsByDate[date]) delete ol.eventsByDate[date][id];
-            if (date in ol.eventsByDate && !Object.keys(ol.eventsByDate[date]).length) delete ol.eventsByDate[date];
+            delete ol.eventsByDate[date][id];
+            if (!Object.keys(ol.eventsByDate[date]).length) delete ol.eventsByDate[date];
             clear = true;
         });
     }
 
     if (clear) {
-        let clusterSource = ol.clusterLayer.getSource() as Cluster;
-        clusterSource.getSource().clear();
+        ol.clusterLayer.getSource().clear();
         ol.eventLayer.getSource().clear();
         for (let dateString of Object.keys(ol.eventsByDate)) {
             for (let id of Object.keys(ol.eventsByDate[dateString])) {
                 ol.eventLayer.getSource().addFeature(ol.eventsByDate[dateString][id]);
-            }
-        }
-        for (let dateString of Object.keys(ol.clustersByDate)) {
-            for (let id of Object.keys(ol.clustersByDate[dateString])) {
-                clusterSource.getSource().addFeature(ol.clustersByDate[dateString][id]);
             }
         }
     }
@@ -436,13 +435,10 @@ function getPrecision(feature: FeatureLike): number {
 
 function getVector_(
     part_url: string,
-    all_url: string,
     isLoaded: [boolean],
-    isStarted: [boolean],
     existMap: Record<string, Record<string, Feature>>,
     cacheMap: Record<string, Record<string, Feature>>,
     part_req: [XMLHttpRequest | null],
-    all_req: [XMLHttpRequest | null],
     source: VectorSource,
     ol: OlObjects,
     controls: Controls,
@@ -451,11 +447,14 @@ function getVector_(
     if (isLoaded[0]) return;
 
     let closure = (responseText: string, complete: boolean) => {
+        let d = new Date();
         let json: GeoJSONFeatureCollection = JSON.parse(responseText);
         let newEvents: Feature[] = [];
 
+        d = new Date();
         let geoJson = new GeoJSON();
-        json.features.forEach((geoJsonFeature: GeoJSONFeature) => {
+
+        yieldingForEach(json.features, 100, (geoJsonFeature: GeoJSONFeature) => {
             let dateString = getDate(db2Date(geoJsonFeature.properties.skredTidspunkt));
             let id = geoJsonFeature.properties.skredID;
             let exists = existMap[dateString] && existMap[dateString][geoJsonFeature.properties.skredID];
@@ -465,21 +464,15 @@ function getVector_(
                 cacheMap[dateString][id] = feature;
                 newEvents.push(cacheMap[dateString][id]);
             }
-        });
-
-        filter_(newEvents, source, existMap, controls, ol, (features) => {
-            return callback(features, complete);
+        }, () => {
+            d = new Date();
+            filter_(newEvents, source, existMap, controls, ol, (features) => {
+                return callback(features, complete);
+            });
         });
     };
 
     get(part_url, part_req, (responseText) => closure(responseText, false));
-    if (!isStarted[0]) {
-        isStarted[0] = true;
-        get(all_url, all_req, (responseText) => {
-            isLoaded[0] = true;
-            closure(responseText, true);
-        });
-    }
 }
 
 function recallVector_(
@@ -535,6 +528,8 @@ function getRegions_(controls: Controls, ol: OlObjects) {
             let name = feature.get("omradeNavn");
             ol.regions[parseInt(id)] = feature;
             regionIdName.push([id, name]);
+            ol.regionCenters[id] = new GeoJSON({})
+                .readFeature(turf.centerOfMass(JSON.parse(new GeoJSON({}).writeFeature(feature))));
         });
         regionIdName = regionIdName.sort((tup1, tup2) => {
             return tup1[1].localeCompare(tup2[1], 'no-NO');
@@ -543,41 +538,17 @@ function getRegions_(controls: Controls, ol: OlObjects) {
             addRegion(id, name, controls, ol);
         });
         ol.regionLayer.getSource().addFeatures(features);
+        controls.regionSelector.dispatchEvent(new Event('input'));
     });
 }
 
 function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Controls, ol: OlObjects): Feature[] {
     let name = controls.regionSelector.value;
     if (name) {
-        let geometry = ol.regions[parseInt(name, 10)].getGeometry();
-        let geoJson = new GeoJSON();
-        let geoJsonRegion = geoJson.writeGeometryObject(geometry) as turf.GeometryObject;
         return array.map((feature) => {
-            let storedRegion = feature.get("region");
-            let storedNotRegion: string[] = feature.get("notRegion");
-            if (storedRegion) {
-                if ((storedRegion == name) == keep ) {
-                    return feature;
-                }
-            } else if (!keep && storedNotRegion && storedNotRegion.indexOf(name) != -1) {
+            let storedRegion = feature.get("regionId");
+            if ((storedRegion == name) == keep ) {
                 return feature;
-            } else if (!storedNotRegion || storedNotRegion.indexOf(name) == -1) {
-                let date = getDate(db2Date(feature.get("skredTidspunkt")));
-                let id = feature.get("skredID");
-                let evalFeature = feature;
-                if (date in ol.clustersByDate && id in ol.clustersByDate[date]) {
-                    evalFeature = ol.clustersByDate[date][id];
-                }
-                let geoJsonEvent = geoJson.writeGeometryObject(evalFeature.getGeometry()) as turf.GeometryObject;
-                let within = turf.booleanWithin(geoJsonEvent, geoJsonRegion);
-                if (within) {
-                    feature.set("region", name);
-                } else if (storedNotRegion) {
-                    storedNotRegion.push(name);
-                } else {
-                    feature.set("notRegion", [name]);
-                }
-                if (within == keep) return feature;
             }
         }).filter(Boolean);
     } else if (keep) {
@@ -590,6 +561,7 @@ function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Contro
 export {
     CLUSTER_THRESHOLD,
     OlObjects,
+    PointApi,
     initMap,
     getEvents,
     resetVectors,

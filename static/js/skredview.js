@@ -1,1 +1,0 @@
-alert('The web client has yet to be compiled from TypeScript! See README.md for more information.')

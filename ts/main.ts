@@ -17,35 +17,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDateEnd = new Date(controls.dateEnd.value as string);
     let ol = Ol.initMap(controls);
     let charts = Charts.initCharts(controls);
-    let eventClosure = (newFeatures: Feature<Polygon>[], _complete: boolean) => {
-        Charts.calculateTimelineEvent(newFeatures, charts, controls);
-        Charts.calculateSize(newFeatures, charts, controls);
-        Charts.calculateHeight(newFeatures, charts, controls);
-        Charts.calculateExposition(newFeatures, charts, controls);
+    let eventClosure = (_newFeatures: Feature<Polygon>[], _complete: boolean) => {
+    };
+    let clusterClosure = (points: Ol.PointApi) => {
+        Charts.calculateTimeline(points, charts, controls);
+        //Charts.calculateSize(points., charts, controls);
+        Charts.calculateHeight(points, charts, controls);
+        Charts.calculateExposition(points, charts, controls);
         Statistics.calculateStatistics(ol);
     };
-    let clusterClosure = (newFeatures: Feature[], complete: boolean) => {
-        let clusterSource = ol.clusterLayer.getSource() as Cluster;
-        if (complete) Controls.showEmptyBox(!clusterSource.getSource().getFeatures().length);
-        Charts.calculateTimelineCluster(newFeatures, charts, controls);
-    };
     Charts.clearStatistics(false, charts, controls);
-    Ol.getCluster(ol, controls, clusterClosure);
-    Ol.getEvents(ol, controls, eventClosure);
+    let showEvents = () => ol.map.getView().getZoom() > Ol.CLUSTER_THRESHOLD;
+    if (showEvents()) {
+        Ol.getEvents(ol, controls, eventClosure);
+    }
     let dateChangeClosure = () => {
         Popup.setPopup(undefined, null, ol);
         Controls.showEmptyBox(false);
         Ol.resetVectors(false, true, ol, controls);
         Charts.updateTimelineDates(charts, controls, ol);
-        Charts.clearSize(false, charts, controls);
-        Charts.clearHeight(false, charts, controls);
-        Charts.clearExposition(false, charts, controls);
+        Charts.clearSize(true, charts, controls);
+        Charts.clearHeight(true, charts, controls);
+        Charts.clearExposition(true, charts, controls);
         Statistics.clearStatistics();
-        Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
-        Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
-        Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
         Ol.getCluster(ol, controls, clusterClosure);
-        Ol.getEvents(ol, controls, eventClosure);
+        if (showEvents()) {
+            Ol.getEvents(ol, controls, eventClosure);
+        }
     };
 
     controls.dateStart.oninput = () => {
@@ -101,53 +99,20 @@ document.addEventListener('DOMContentLoaded', () => {
             Controls.showEmptyBox(false);
             Ol.resetVectors(true, selectedRegion == "", ol, controls);
             Ol.selectRegion(ol, controls);
-            if (selectedRegion != "") {
-                let clustersource = (ol.clusterLayer.getSource() as Cluster);
-                Charts.clearStatistics(false, charts, controls);
-                Charts.calculateTimelineEvent(ol.eventLayer.getSource().getFeatures(), charts, controls);
-                Charts.calculateTimelineCluster(clustersource.getSource().getFeatures(), charts, controls);
-                Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
-                Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
-                Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
-            }
+            Charts.updateTimelineDates(charts, controls, ol);
+            Charts.clearStatistics(true, charts, controls);
             Statistics.clearStatistics();
             Ol.getCluster(ol, controls, clusterClosure);
-            Ol.getEvents(ol, controls, eventClosure);
+            if (showEvents()) {
+                Ol.getEvents(ol, controls, eventClosure);
+            }
         }, 0);
     };
 
-    controls.areaDsizeRadio[0].oninput = () => {
-        Controls.adjustSize(controls);
-        let features = [];
-        let clusters = [];
-        for (let dateString of Object.keys(ol.eventsByDate)) {
-            for (let id of Object.keys(ol.eventsByDate[dateString])) {
-                features.push(ol.eventsByDate[dateString][id]);
-            }
-        }
-        for (let dateString of Object.keys(ol.clustersByDate)) {
-            for (let id of Object.keys(ol.clustersByDate[dateString])) {
-                clusters.push(ol.clustersByDate[dateString][id]);
-            }
-        }
-        Charts.clearStatistics(false, charts, controls);
-        Charts.calculateTimelineCluster(clusters, charts, controls);
-        Charts.calculateTimelineEvent(features, charts, controls);
-        Charts.calculateSize(ol.eventLayer.getSource().getFeatures(), charts, controls);
-        Charts.calculateHeight(ol.eventLayer.getSource().getFeatures(), charts, controls);
-        Charts.calculateExposition(ol.eventLayer.getSource().getFeatures(), charts, controls);
-    };
-    controls.areaDsizeRadio[1].oninput = () => {
-        controls.areaDsizeRadio[0].dispatchEvent(new Event("input"));
-    };
-    controls.dsizeDepth.oninput = () => {
-        controls.areaDsizeRadio[1].checked = true;
-        controls.areaDsizeRadio[0].dispatchEvent(new Event("input"));
-    };
-
     ol.map.on('moveend', () => {
-        Ol.getCluster(ol, controls, clusterClosure);
-        Ol.getEvents(ol, controls, eventClosure);
+        if (showEvents()) {
+            Ol.getEvents(ol, controls, eventClosure);
+        }
         Ol.updateMapState(ol);
     });
 

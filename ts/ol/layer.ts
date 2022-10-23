@@ -130,7 +130,7 @@ function createView(extent: Extent, center: Coordinate, zoom: number): View {
     return new View(options);
 }
 
-function createBaseLayer(layerName: string, backoff_counter: Record<string, number>): TileLayer {
+function createBaseLayer(layerName: string, backoff_counter: Record<string, number>): TileLayer<WMTS> {
     let baseLayer = new TileLayer({
         source: new WMTS({
             url: TILE_URL,
@@ -155,7 +155,7 @@ function createBaseLayer(layerName: string, backoff_counter: Record<string, numb
     return baseLayer;
 }
 
-function createOrthoLayer(): ImageLayer {
+function createOrthoLayer(): ImageLayer<ImageWMS> {
     let baseLayerOrtho = new ImageLayer({
         extent: [-250025, 6299985, 1211155, 8985010],
         zIndex: 1,
@@ -182,7 +182,7 @@ function createOrthoLayer(): ImageLayer {
     return baseLayerOrtho;
 }
 
-function createNveLayer(url: string, layer: string): ImageLayer {
+function createNveLayer(url: string, layer: string): ImageLayer<ImageArcGISRest> {
     return new ImageLayer({
         zIndex: 2,
         opacity: 0.5,
@@ -196,7 +196,7 @@ function createNveLayer(url: string, layer: string): ImageLayer {
     });
 }
 
-function createRegionLayer(): VectorImageLayer {
+function createRegionLayer(): VectorImageLayer<Vector> {
     return new VectorImageLayer({
         source: new Vector({
             attributions: ATTR_NVE,
@@ -216,7 +216,7 @@ function createRegionLayer(): VectorImageLayer {
     });
 }
 
-function createSelectedRegionLayer(): VectorImageLayer {
+function createSelectedRegionLayer(): VectorImageLayer<Vector> {
     return new VectorImageLayer({
         source: new Vector({
             attributions: ATTR_NVE,
@@ -235,7 +235,7 @@ function createSelectedRegionLayer(): VectorImageLayer {
     });
 }
 
-function createEventLayer(): VectorImageLayer {
+function createEventLayer(): VectorImageLayer<Vector> {
     let eventStyleCache: Record<string, Style> = {};
     return new VectorImageLayer({
         opacity: VECTOR_OPACITY,
@@ -270,24 +270,21 @@ function createEventLayer(): VectorImageLayer {
     });
 }
 
-function createClusterLayer(): VectorImageLayer {
+function createClusterLayer(): VectorImageLayer<Vector> {
     let clusterStyleCache: Record<number, Style> = {};
     return new VectorImageLayer({
         opacity: VECTOR_OPACITY,
-        source: new Cluster({
-            source: new VectorSource(),
+        source: new VectorSource({
             attributions: ATTR_NVE,
             wrapX: false,
-            distance: 40,
         }),
         style: (feature) => {
-            let features = feature.get('features');
-            let size = features.length;
+            let size = feature.get('size');
             let style = clusterStyleCache[size];
             if (!style) {
                 style = new Style({
                     image: new CircleStyle({
-                        radius: 10,
+                        radius: 20,
                         stroke: new Stroke({
                             color: '#fff',
                         }),

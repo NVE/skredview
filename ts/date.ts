@@ -1,10 +1,10 @@
-const DATE_FORMAT = {
+const DATE_FORMAT: Record<string, "numeric"|"2-digit"> = {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
 };
 
-const TIME_FORMAT = {
+const TIME_FORMAT: Record<string, "numeric"|"2-digit"|boolean> = {
     hour12: false,
     year: 'numeric',
     month: '2-digit',
@@ -24,9 +24,12 @@ function db2Date(dateString: string): Date {
     let year = parseInt(dateString.slice(0, 4), 10);
     let month = parseInt(dateString.slice(5, 7), 10) - 1;
     let day = parseInt(dateString.slice(8, 10), 10);
-    let hour = parseInt(dateString.slice(11, 13), 10);
-    let minute = parseInt(dateString.slice(14, 16), 10);
-    let second = parseInt(dateString.slice(17, 19), 10);
+    let [hour, minute, second] = [0, 0, 0];
+    if (dateString.length > 10) {
+        hour = parseInt(dateString.slice(11, 13), 10);
+        minute = parseInt(dateString.slice(14, 16), 10);
+        second = parseInt(dateString.slice(17, 19), 10);
+    }
     return new Date(year, month, day, hour, minute, second)
 }
 

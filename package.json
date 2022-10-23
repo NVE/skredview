@@ -19,15 +19,15 @@
   "homepage": "https://github.com/widforss/skredview#readme",
   "dependencies": {
     "@turf/turf": "^5.1.6",
-    "@types/ol": "^6.4.2",
-    "@types/proj4": "^2.5.0",
-    "highcharts": "^9.0.0",
-    "ol": "^6.4.3",
-    "ol-layerswitcher": "^3.8.1",
-    "proj4": "^2.6.3",
+    "@types/ol": "^6.5.3",
+    "@types/proj4": "^2.5.2",
+    "highcharts": "^9.3.3",
+    "ol": "^6.15.1",
+    "ol-layerswitcher": "^3.8.3",
+    "proj4": "^2.8.0",
     "ts-loader": "^7.0.5",
-    "typescript": "^3.9.7",
-    "webpack": "^4.44.2",
+    "typescript": "^3.9.10",
+    "webpack": "^5.74.0",
     "webpack-cli": "^3.3.12"
   }
 }
