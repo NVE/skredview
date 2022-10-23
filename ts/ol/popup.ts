@@ -52,6 +52,7 @@ function formatEventInfo_(event: Feature): HTMLDivElement {
     let status = (dbText: string) => ({
         "Godkjent kvalitet A": "Approved quality A",
         "Godkjent kvalitet B": "Approved quality B",
+        "Godkjent kvalitet C": "Approved quality C",
     } as Record<string, string>)[dbText];
 
     let avalId = event.get("skredID");
