@@ -24,12 +24,19 @@ import Text from "ol/style/Text";
 import Tile from "ol/Tile";
 import VectorSource from "ol/source/Vector";
 import ImageLayer from "ol/layer/Image";
-import {ImageArcGISRest, ImageWMS} from "ol/source";
+import {
+    ImageArcGISRest,
+    ImageWMS,
+    TileArcGISRest,
+    TileWMS,
+    XYZ
+} from "ol/source";
 import {Layer} from "ol/layer";
 import {register} from "ol/proj/proj4";
 import proj4 from "proj4";
 import LayerSwitcher = require("ol-layerswitcher");
 import LayerGroup from "ol/layer/Group";
+import TileGrid from "ol/tilegrid/TileGrid";
 
 const EXP_TIMEOUT = 500;
 const ATTR_NVE = [
@@ -40,11 +47,21 @@ const ATTR_KV = [
     '© <a href="https://www.kartverket.no/" target="_blank">Kartverket</a>',
     '<a href="https://www.kartverket.no/data/lisens/" target="_blank">(CC BY 4.0)</a>'
 ].join(" ");
+const ATTR_SE = [
+    '© <a href="https://www.lantmateriet.se/" target="_blank">Lantmäteriet</a>',
+    '<a href="https://www.kartverket.no/data/lisens/" target="_blank">(CC BY 4.0)</a>'
+].join(" ");
 const INIT_POS = [438700, 7264409];
 const INIT_ZOOM = 7;
 const TILE_URL = 'https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts/?';
+const SWE_URL = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/9a73d194-b3c4-399e-864b-52f568a87631/?';
+const SJM_URL = 'https://geodata.npolar.no/arcgis/rest/services/Basisdata/NP_Basiskart_Svalbard_WMTS_25833/MapServer/WMTS?';
 const PROJECTION = 'EPSG:25833';
+const SE_PROJECTION = 'EPSG:3006';
 const PROJECTION_EXTENT: Extent = [-2500000, 6420992, 1130000, 9045984];
+const SJ_PROJECTION_EXTENT: Extent = [369976.3899489096, 8221306.539890718, 878234.7199568129, 9010718.76990194];
+const SJ_ORIGIN = [-5120900.0, 9998100.0];
+const SE_PROJECTION_EXTENT: Extent = [-1200000, 4305696, 2994304, 8500000];
 const VIEW_EXTENT: Extent = [-1100000, 5450000, 2130000, 9000000];
 const MIN_ZOOM = 6;
 const MAX_ZOOM = 17;
@@ -68,6 +85,23 @@ const RESOLUTIONS = [
     0.33056640625,
     0.165283203125,
 ];
+const SJM_RESOLUTIONS = [
+    21674.7100160867,
+    10837.35500804335,
+    5418.677504021675,
+    2709.3387520108377,
+    1354.6693760054188,
+    677.3346880027094,
+    338.6673440013547,
+    169.33367200067735,
+    84.66683600033868,
+    42.33341800016934,
+    21.16670900008467,
+    10.583354500042335,
+    5.291677250021167,
+    2.6458386250105836
+];
+const SE_RESOLUTIONS = [4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8]
 const MATRIX_IDS = [
     "EPSG:25833:0",
     "EPSG:25833:1",
@@ -88,6 +122,11 @@ const MATRIX_IDS = [
     "EPSG:25833:16",
     "EPSG:25833:17",
 ];
+
+enum LayerType {
+    Bw,
+    Color
+}
 
 proj4.defs('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
 register(proj4);
@@ -123,15 +162,15 @@ function createView(extent: Extent, center: Coordinate, zoom: number): View {
         projection: PROJECTION,
         center,
         zoom,
-        minZoom: MIN_ZOOM,
+        //minZoom: MIN_ZOOM,
         maxZoom: MAX_ZOOM,
-        extent,
+        //extent,
     };
     return new View(options);
 }
 
-function createBaseLayer(layerName: string, backoff_counter: Record<string, number>): TileLayer<WMTS> {
-    let baseLayer = new TileLayer({
+function createBaseLayer(layerType: LayerType, backoff_counter: Record<string, number>): LayerGroup {
+    let noLayer = new TileLayer({
         source: new WMTS({
             url: TILE_URL,
             attributions: ATTR_KV,
@@ -140,7 +179,7 @@ function createBaseLayer(layerName: string, backoff_counter: Record<string, numb
                 resolutions: RESOLUTIONS,
                 matrixIds: MATRIX_IDS,
             }),
-            layer: layerName,
+            layer: layerType == LayerType.Bw ? 'topo4graatone' : 'topo4',
             matrixSet: 'EPSG:25833',
             format: 'image/png',
             projection: PROJECTION,
@@ -149,50 +188,78 @@ function createBaseLayer(layerName: string, backoff_counter: Record<string, numb
         }),
         zIndex: 1,
     });
-    baseLayer.getSource().on('tileloaderror', function (e: TileSourceEvent) {
-        exponentialBackoff_(e.tile, backoff_counter);
+    let seLayer = new TileLayer({
+        source: new WMTS({
+            url: SWE_URL,
+            attributions: ATTR_SE,
+            tileGrid: new WMTSTileGrid({
+                extent: SE_PROJECTION_EXTENT,
+                resolutions: SE_RESOLUTIONS,
+                matrixIds: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            }),
+            layer: layerType == LayerType.Bw ? 'topowebb_nedtonad' : 'topowebb',
+            matrixSet: '3006',
+            format: 'image/png',
+            projection: SE_PROJECTION,
+            style: 'default',
+            wrapX: false,
+        }),
+        zIndex: 1,
+    });
+    let sjLayer = new TileLayer({
+        source: new WMTS({
+            url: SJM_URL,
+            attributions: ATTR_SE,
+            tileGrid: new WMTSTileGrid({
+                extent: SJ_PROJECTION_EXTENT,
+                resolutions: SJM_RESOLUTIONS,
+                origin: SJ_ORIGIN,
+                matrixIds: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'],
+            }),
+            projection: PROJECTION,
+            wrapX: false,
+            style: 'default',
+            layer: 'NP_Basiskart_Svalbard_WMTS_25833',
+            matrixSet: 'default028mm',
+        }),
+        zIndex: 1,
+    });
+    let baseLayer = new LayerGroup({
+        layers: [seLayer, sjLayer, noLayer]
+    });
+    [noLayer, sjLayer, seLayer].forEach((layer) => {
+        layer.getSource().on('tileloaderror', function (e: TileSourceEvent) {
+            exponentialBackoff_(e.tile, backoff_counter);
+        });
     });
     return baseLayer;
 }
 
-function createOrthoLayer(): ImageLayer<ImageWMS> {
-    let baseLayerOrtho = new ImageLayer({
-        extent: [-250025, 6299985, 1211155, 8985010],
-        zIndex: 1,
-        source: new ImageWMS(),
+function createSlopeLayer(): LayerGroup {
+    let seLayer = new TileLayer({
+        zIndex: 2,
+        opacity: 0.75,
+        source: new TileWMS({
+            url: 'http://nvgis.naturvardsverket.se/geoserver/lavinprognoser/ows?',
+            params: {
+                'LAYERS': 'lavinprognoser:slope_inclination',
+                'TILED': true,
+            }
+        })
     });
-    let orthoStartDate: Date;
-    let orthoClosure = () => {
-        if (!orthoStartDate || new Date().getTime() - orthoStartDate.getTime() > 1000 * 3000) {
-            get("/api/baat/nib", [null], (ticket) => {
-                orthoStartDate = new Date();
-                baseLayerOrtho.setSource(new ImageWMS({
-                    url: 'https://wms.geonorge.no/skwms1/wms.nib',
-                    attributions: ATTR_KV,
-                    params: {
-                        'ticket': ticket,
-                        'layers': 'ortofoto',
-                    },
-                }));
-            });
-        }
-        setTimeout(orthoClosure, 1000 * 3000);
-    };
-    setTimeout(orthoClosure, 0);
-    return baseLayerOrtho;
-}
-
-function createNveLayer(url: string, layer: string): ImageLayer<ImageArcGISRest> {
-    return new ImageLayer({
+    let noLayer = new ImageLayer({
         zIndex: 2,
         opacity: 0.5,
         source: new ImageArcGISRest({
             attributions: ATTR_NVE,
             params: {
-                'layers': layer,
+                'layers': 'show:0,1',
             },
-          url,
+            url: 'https://gis3.nve.no/arcgis/rest/services/wmts/Bratthet/MapServer',
         }),
+    });
+    return new LayerGroup({
+        layers: [seLayer, noLayer]
     });
 }
 
@@ -324,10 +391,10 @@ export {
     createMap,
     createView,
     createBaseLayer,
-    createOrthoLayer,
-    createNveLayer,
+    createSlopeLayer,
     createRegionLayer,
     createSelectedRegionLayer,
     createEventLayer,
     createClusterLayer,
+    LayerType,
 };

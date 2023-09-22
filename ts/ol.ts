@@ -20,6 +20,8 @@ import ImageLayer from "ol/layer/Image";
 import { yieldingForEach } from "./loop";
 import { AllGeoJSON, Point } from "@turf/turf";
 import { Vector, WMTS } from "ol/source";
+import LayerGroup from "ol/layer/Group";
+import {LayerType} from "./ol/layer";
 
 interface PointApi {
     regions: Record<string, number>
@@ -61,8 +63,8 @@ interface OlObjects {
     // Map of regions by their numerical IDs.
     regions: Record<number, Feature>,
 
-    baseLayerBw: TileLayer<WMTS>,
-    baseLayerColor: TileLayer<WMTS>,
+    baseLayerBw: LayerGroup,
+    baseLayerColor: LayerGroup,
     regionLayer: VectorImageLayer<Vector>,
     // Layer containing currently selected region.
     selectedRegionLayer: VectorImageLayer<Vector>,
@@ -95,46 +97,21 @@ function initMap(controls: Controls): OlObjects {
     let backoff_counter_bw: Record<string, number> = {};
     let backoff_counter_color: Record<string, number> = {};
 
-    let baseLayerBw = Layer.createBaseLayer('topo4graatone', backoff_counter_bw);
+    let baseLayerBw = Layer.createBaseLayer(LayerType.Bw, backoff_counter_bw);
     baseLayerBw.setZIndex(0);
-    let fakeBaseLayer = new TileLayer();
-    fakeBaseLayer.set('title', 'Grayscale Topo Map');
-    fakeBaseLayer.set('type', 'base');
+    baseLayerBw.set('title', 'Grayscale Topo Map');
+    baseLayerBw.set('type', 'base');
+    baseLayerBw.set('combine', true);
 
-    let baseLayerColor = Layer.createBaseLayer('topo4', backoff_counter_color);
+    let baseLayerColor = Layer.createBaseLayer(LayerType.Color, backoff_counter_color);
     baseLayerColor.set('title', 'Color Topo Map');
     baseLayerColor.set('type', 'base');
-    baseLayerColor.on("change:visible", (e) => {
-        baseLayerBw.setVisible(!e.target.get(e.key));
-    });
+    baseLayerColor.set('combine', true);
 
-    let baseLayerOrtho = Layer.createOrthoLayer();
-    baseLayerOrtho.set('title', 'Orthophoto');
-    baseLayerOrtho.set('type', 'base');
-
-    let slopeUrl = 'https://gis3.nve.no/map/rest/services/Bratthet/MapServer';
-    let slopeLayer = Layer.createNveLayer(slopeUrl, 'show:0,1');
+    let slopeLayer = Layer.createSlopeLayer();
     slopeLayer.setVisible(false)
     slopeLayer.set('title', 'Slope');
-
-
-    let dangerUrl = 'https://gis3.nve.no/map/rest/services/SkredSnoAktR/MapServer';
-    let dangerGroup = new Group({
-        visible: false,
-        layers: [
-            Layer.createNveLayer(dangerUrl, 'show:0'),
-            Layer.createNveLayer(dangerUrl, 'show:1,2'),
-        ]
-    });
-    dangerGroup.getLayers().getArray()[0].setMaxZoom(13.75773);
-    dangerGroup.getLayers().getArray()[1].setMinZoom(13.75773);
-    let fakeDangerLayer = new ImageLayer({
-        visible: false
-    });
-    fakeDangerLayer.set('title', 'Danger zones');
-    fakeDangerLayer.on("change:visible", (e) => {
-        dangerGroup.setVisible(e.target.get(e.key));
-    });
+    slopeLayer.set('combine', true);
 
     let regionLayer = Layer.createRegionLayer();
     let selectedRegionLayer = Layer.createSelectedRegionLayer();
@@ -159,17 +136,13 @@ function initMap(controls: Controls): OlObjects {
 
     let baseGroup = new Group({
         layers: [
-            baseLayerOrtho,
             baseLayerColor,
-            fakeBaseLayer,
             baseLayerBw,
         ]
     });
     baseGroup.set('title', 'Baselayers');
     let extraGroup = new Group({
         layers: [
-            fakeDangerLayer,
-            dangerGroup,
             slopeLayer,
         ]
     });
