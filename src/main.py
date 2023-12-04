@@ -76,7 +76,8 @@ def events_within(w, s, e, n):
     :param n: Northen boundary
     :return: GeoJSONFeatureCollection<Polygon>
     """
-    region = request.args.get("region")
+    regions = request.args.get("region")
+    regions = regions.split(',') if regions else regions
 
     q = f"""
         SELECT
@@ -105,7 +106,7 @@ def events_within(w, s, e, n):
             AND h.skredTidspunkt < ?
             AND h.registrertAv = 'Sentinel-1'
             AND h.regStatus != 'Slettet'
-            {f'AND r.OMRAADEID = ?' if region else ''}
+            {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ORDER BY t.registrertDato DESC
     """
 
@@ -113,8 +114,8 @@ def events_within(w, s, e, n):
     w, s, e, n = float(w), float(s), float(e), float(n)
     bbox = f'POLYGON (({w} {s}, {e} {s}, {e} {n}, {w} {n}, {w} {s}))'
     params = [bbox, EPSG, start, end]
-    if region:
-        params.append(region)
+    if regions:
+        params += regions
     return geo_query(q, params)
 
 
@@ -124,7 +125,8 @@ def events_point_within():
 
     :return: GeoJSONFeatureCollection<Polygon>
     """
-    region = request.args.get("region")
+    regions = request.args.get("region")
+    regions = regions.split(',') if regions else regions
 
     q = f"""
         WITH Points (date, regionId, exp, exposition, elevation, precision)
@@ -143,7 +145,7 @@ def events_point_within():
                 AND h.skredTidspunkt < ?
                 AND h.registrertAv = 'Sentinel-1'
                 AND h.regStatus != 'Slettet'
-                {f'AND r.OMRAADEID = ?' if region else ''}
+                {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ),
         Points_gt48 (date, regionId, exp, exposition, elevation)
         AS (
@@ -239,8 +241,8 @@ def events_point_within():
 
     start, end = date_parse(request)
     params = [start, end]
-    if region:
-        params.append(region)
+    if regions:
+        params += regions
     columns, rows = query(q, params)
     d = {column: {} if value is None else json.loads(value) for column, value in zip(columns, rows[0])}
     response = app.response_class(

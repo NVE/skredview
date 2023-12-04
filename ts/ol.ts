@@ -22,6 +22,7 @@ import { AllGeoJSON, Point } from "@turf/turf";
 import { Vector, WMTS } from "ol/source";
 import LayerGroup from "ol/layer/Group";
 import {LayerType} from "./ol/layer";
+import {Geometry} from "ol/geom";
 
 interface PointApi {
     regions: Record<string, number>
@@ -82,6 +83,11 @@ interface OlObjects {
 }
 
 const CLUSTER_THRESHOLD = 11;
+const ASSOCIATED_REGIONS: {[key: number]: number[]} = {
+    5052: [5002, 5008],
+    5051: [5001, 5009],
+    5050: [5003, 5007],
+}
 
 /**
  * Initializes the map.
@@ -205,8 +211,13 @@ function getEvents(
     let dateEnd = controls.dateEnd.value as string;
     let bbox = ol.map.getView().calculateExtent();
     let regionParam = "";
-    if (controls.regionSelector.value) {
+    let region_s = controls.regionSelector.value
+    if (region_s) {
+        let region = parseInt(region_s, 10);
         regionParam = `&region=${controls.regionSelector.value}`
+        if (region in ASSOCIATED_REGIONS) {
+            regionParam += `,${ASSOCIATED_REGIONS[region].join(',')}`
+        }
     }
     recallVector_(
         dateRange(new Date(controls.dateStart.value), new Date(controls.dateEnd.value)),
@@ -244,8 +255,13 @@ function getCluster(
     let dateStart = controls.dateStart.value as string;
     let dateEnd = controls.dateEnd.value as string;
     let regionParam = "";
-    if (controls.regionSelector.value) {
+    let region_s = controls.regionSelector.value
+    if (region_s) {
+        let region = parseInt(region_s, 10);
         regionParam = `&region=${controls.regionSelector.value}`
+        if (region in ASSOCIATED_REGIONS) {
+            regionParam += `,${ASSOCIATED_REGIONS[region].join(',')}`
+        }
     }
     let url = `/api/events/points/?start=${dateStart}&end=${dateEnd}${regionParam}`
 
@@ -363,10 +379,16 @@ function updateMapState(ol: OlObjects): void {
  * @param controls: Controls
  */
 function selectRegion(ol: OlObjects, controls: Controls): void {
-    let name = controls.regionSelector.value;
+    let id_s = controls.regionSelector.value;
     let source = ol.selectedRegionLayer.getSource();
     source.clear();
-    if (name) source.addFeature(ol.regions[parseInt(name, 10)]);
+    if (id_s) {
+        let id = parseInt(id_s, 10);
+        source.addFeature(ol.regions[id]);
+        ASSOCIATED_REGIONS[id]?.forEach((subId) => {
+            source.addFeature((ol.regions[subId]))
+        })
+    }
 }
 
 /**
@@ -517,14 +539,20 @@ function getRegions_(controls: Controls, ol: OlObjects) {
 }
 
 function filterArrayByRegions_(array: Feature[], keep: boolean, controls: Controls, ol: OlObjects): Feature[] {
-    let name = controls.regionSelector.value;
-    if (name) {
-        return array.map((feature) => {
-            let storedRegion = feature.get("regionId");
-            if ((storedRegion == name) == keep ) {
-                return feature;
-            }
-        }).filter(Boolean);
+    let filter = (id_s: string) => array.map((feature: Feature<Geometry>) => {
+        let storedRegion = feature.get("regionId");
+        if ((storedRegion == id_s) == keep) {
+            return feature;
+        }
+    }).filter(Boolean);
+    let id_s = controls.regionSelector.value;
+    if (id_s) {
+        let filtered = filter(id_s);
+        let id = parseInt(id_s, 10)
+        ASSOCIATED_REGIONS[id]?.forEach(subId => {
+            filtered = filtered.concat(filter(subId.toString()));
+        })
+        return filtered;
     } else if (keep) {
         return array;
     } else {
