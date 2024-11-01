@@ -53,7 +53,7 @@ const ATTR_SE = [
 ].join(" ");
 const INIT_POS = [438700, 7264409];
 const INIT_ZOOM = 7;
-const TILE_URL = 'https://opencache.statkart.no/gatekeeper/gk/gk.open_wmts/?';
+const TILE_URL = 'https://cache.kartverket.no/topo/v1/wmts/1.0.0/?';
 const SWE_URL = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/9a73d194-b3c4-399e-864b-52f568a87631/?';
 const SJM_URL = 'https://geodata.npolar.no/arcgis/rest/services/Basisdata/NP_Basiskart_Svalbard_WMTS_25833/MapServer/WMTS?';
 const PROJECTION = 'EPSG:25833';
@@ -103,24 +103,24 @@ const SJM_RESOLUTIONS = [
 ];
 const SE_RESOLUTIONS = [4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8]
 const MATRIX_IDS = [
-    "EPSG:25833:0",
-    "EPSG:25833:1",
-    "EPSG:25833:2",
-    "EPSG:25833:3",
-    "EPSG:25833:4",
-    "EPSG:25833:5",
-    "EPSG:25833:6",
-    "EPSG:25833:7",
-    "EPSG:25833:8",
-    "EPSG:25833:9",
-    "EPSG:25833:10",
-    "EPSG:25833:11",
-    "EPSG:25833:12",
-    "EPSG:25833:13",
-    "EPSG:25833:14",
-    "EPSG:25833:15",
-    "EPSG:25833:16",
-    "EPSG:25833:17",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
 ];
 
 enum LayerType {
@@ -179,8 +179,8 @@ function createBaseLayer(layerType: LayerType, backoff_counter: Record<string, n
                 resolutions: RESOLUTIONS,
                 matrixIds: MATRIX_IDS,
             }),
-            layer: layerType == LayerType.Bw ? 'topo4graatone' : 'topo4',
-            matrixSet: 'EPSG:25833',
+            layer: layerType == LayerType.Bw ? 'topograatone' : 'topo',
+            matrixSet: 'utm33n',
             format: 'image/png',
             projection: PROJECTION,
             style: 'default',
