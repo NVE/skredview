@@ -1,4 +1,4 @@
-import {COLORS, VECTOR_OPACITY} from "../color";
+﻿import {COLORS, VECTOR_OPACITY} from "../color";
 import {getPrecision} from "../ol";
 import * as Cookie from "../cookie";
 import {get} from "../network";
@@ -48,20 +48,28 @@ const ATTR_KV = [
     '<a href="https://www.kartverket.no/data/lisens/" target="_blank">(CC BY 4.0)</a>'
 ].join(" ");
 const ATTR_SE = [
-    '© <a href="https://www.lantmateriet.se/" target="_blank">Lantmäteriet</a>',
-    '<a href="https://www.kartverket.no/data/lisens/" target="_blank">(CC BY 4.0)</a>'
+    '© <a href="https://openstreetmap.org/copyright">OpenStreetMap' +
+    ' contributors</a>, <a href="http://viewfinderpanoramas.org/">SRTM</a>,' +
+    ' <a href="https://opentopomap.org/">OpenTopoMap</a>' +
+    ' (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+].join(" ");
+const ATTR_SJ = [
+    '© <a href="https://npolar.no/" target="_blank">Norsk' +
+    ' polarinstitutt</a>',
+    '<a href="https://creativecommons.org/licenses/by/4.0/deed.no" target="_blank">(CC BY 4.0)</a>'
 ].join(" ");
 const INIT_POS = [438700, 7264409];
 const INIT_ZOOM = 7;
-const TILE_URL = 'https://cache.kartverket.no/topo/v1/wmts/1.0.0/?';
-const SWE_URL = 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/9a73d194-b3c4-399e-864b-52f568a87631/?';
+//const TILE_URL = 'https://cache.kartverket.no/v1/wmts/1.0.0/?';
+const TILE_URL_COLOR = 'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/utm33n/{z}/{y}/{x}.png';
+const TILE_URL_BW = 'https://cache.kartverket.no/v1/wmts/1.0.0/topograatone/default/utm33n/{z}/{y}/{x}.png';
+const SWE_URL = 'https://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png';
 const SJM_URL = 'https://geodata.npolar.no/arcgis/rest/services/Basisdata/NP_Basiskart_Svalbard_WMTS_25833/MapServer/WMTS?';
 const PROJECTION = 'EPSG:25833';
-const SE_PROJECTION = 'EPSG:3006';
+const SE_PROJECTION = 'EPSG:3857';
 const PROJECTION_EXTENT: Extent = [-2500000, 6420992, 1130000, 9045984];
 const SJ_PROJECTION_EXTENT: Extent = [369976.3899489096, 8221306.539890718, 878234.7199568129, 9010718.76990194];
 const SJ_ORIGIN = [-5120900.0, 9998100.0];
-const SE_PROJECTION_EXTENT: Extent = [-1200000, 4305696, 2994304, 8500000];
 const VIEW_EXTENT: Extent = [-1100000, 5450000, 2130000, 9000000];
 const MIN_ZOOM = 6;
 const MAX_ZOOM = 17;
@@ -128,6 +136,8 @@ enum LayerType {
     Color
 }
 
+proj4.defs('EPSG:3857', '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs');
+register(proj4);
 proj4.defs('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
 register(proj4);
 
@@ -171,37 +181,41 @@ function createView(extent: Extent, center: Coordinate, zoom: number): View {
 
 function createBaseLayer(layerType: LayerType, backoff_counter: Record<string, number>): LayerGroup {
     let noLayer = new TileLayer({
-        source: new WMTS({
-            url: TILE_URL,
+        //source: new WMTS({
+        //    url: TILE_URL,
+        //    attributions: ATTR_KV,
+        //    tileGrid: new WMTSTileGrid({
+        //        extent: PROJECTION_EXTENT,
+        //        resolutions: RESOLUTIONS,
+        //        matrixIds: MATRIX_IDS,
+        //    }),
+        //    layer: layerType == LayerType.Bw ? 'topograatone' : 'topo',
+        //    matrixSet: 'utm33n',
+        //    format: 'image/png',
+        //    projection: PROJECTION,
+        //    style: 'default',
+        //    wrapX: false,
+        //}),
+        source: new XYZ({
+            url: layerType == LayerType.Bw ? TILE_URL_BW : TILE_URL_COLOR,
             attributions: ATTR_KV,
             tileGrid: new WMTSTileGrid({
                 extent: PROJECTION_EXTENT,
                 resolutions: RESOLUTIONS,
                 matrixIds: MATRIX_IDS,
             }),
-            layer: layerType == LayerType.Bw ? 'topograatone' : 'topo',
-            matrixSet: 'utm33n',
-            format: 'image/png',
+            crossOrigin: 'Anonymous',
             projection: PROJECTION,
-            style: 'default',
             wrapX: false,
         }),
         zIndex: 1,
     });
     let seLayer = new TileLayer({
-        source: new WMTS({
+        source: new XYZ({
             url: SWE_URL,
             attributions: ATTR_SE,
-            tileGrid: new WMTSTileGrid({
-                extent: SE_PROJECTION_EXTENT,
-                resolutions: SE_RESOLUTIONS,
-                matrixIds: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-            }),
-            layer: layerType == LayerType.Bw ? 'topowebb_nedtonad' : 'topowebb',
-            matrixSet: '3006',
-            format: 'image/png',
+            crossOrigin: 'Anonymous',
             projection: SE_PROJECTION,
-            style: 'default',
             wrapX: false,
         }),
         zIndex: 1,
@@ -209,7 +223,7 @@ function createBaseLayer(layerType: LayerType, backoff_counter: Record<string, n
     let sjLayer = new TileLayer({
         source: new WMTS({
             url: SJM_URL,
-            attributions: ATTR_SE,
+            attributions: ATTR_SJ,
             tileGrid: new WMTSTileGrid({
                 extent: SJ_PROJECTION_EXTENT,
                 resolutions: SJM_RESOLUTIONS,
@@ -255,7 +269,7 @@ function createSlopeLayer(): LayerGroup {
             params: {
                 'layers': 'show:0,1',
             },
-            url: 'https://gis3.nve.no/arcgis/rest/services/wmts/Bratthet/MapServer',
+            url: 'https://gis3.nve.no/arcgis/rest/services/wmts/Bratthet_med_utlop_2024/MapServer',
         }),
     });
     return new LayerGroup({
