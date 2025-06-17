@@ -52,4 +52,4 @@ or
 Add usernames and passwords for database and Geonorge in `src/settings.py`.
 
 # Run development server
-    python src/main.py
+    python src/main.py 4321
