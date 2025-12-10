@@ -104,7 +104,7 @@ def events_within(w, s, e, n):
         WHERE h.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
             AND h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND h.registrertAv = 'Sentinel-1'
+            AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR h.registrertAv = 'Sentinel-1@unet')
             AND h.regStatus != 'Slettet'
             {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ORDER BY t.registrertDato DESC
@@ -143,7 +143,7 @@ def events_point_within():
             LEFT JOIN skredprod.skred.Snoskred_Varslingsregioner AS r ON r.skredID = h.skredID
             WHERE h.skredTidspunkt >= ?
                 AND h.skredTidspunkt < ?
-                AND h.registrertAv = 'Sentinel-1'
+                AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR h.registrertAv = 'Sentinel-1@unet')
                 AND h.regStatus != 'Slettet'
                 {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ),
