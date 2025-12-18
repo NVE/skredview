@@ -468,6 +468,10 @@ function calculateHeight(points: PointApi, charts: Charts, controls: Controls) {
             let series = charts.height.series[i];
 
             let elevation = parseInt(elevationS);
+            // Skip invalid elevations (e.g., -9999 for missing data)
+            if (elevation < 0) {
+                return;
+            }
             let idx = Math.floor(elevation / 200);
             while (series.xAxis.categories.length < idx + 1) {
                 let categories = series.xAxis.categories;

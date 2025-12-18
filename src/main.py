@@ -56,6 +56,15 @@ sql = pool(f'Driver={{{SETTINGS["DB_DRIVER"]}}};'
            f'UID={SETTINGS["DB_USERNAME"]};'
            f'PWD={SETTINGS["DB_PASSWORD"]};'
            f'Trusted_Connection={"yes" if SETTINGS["DB_TRUSTED"] else "no"};')
+# sql = pool(
+#     f'Driver={{{SETTINGS["DB_DRIVER"]}}};'
+#     f'Server={SETTINGS["DB_HOST"]};'
+#     f'Database={SETTINGS["DB_DATABASE"]};'
+#     # f'DOMAIN={SETTINGS["DB_DOMAIN"]};'
+#     f'UID={SETTINGS["DB_USERNAME"]};'
+#     f'PWD={SETTINGS["DB_PASSWORD"]};'
+#     # f'Trusted_Connection={"yes" if SETTINGS["DB_TRUSTED"] else "no"};'
+# )
 
 
 @app.route('/')
@@ -98,13 +107,13 @@ def events_within(w, s, e, n):
             u.shape.STArea() AS area,
             u.SHAPE.STAsBinary() AS geom
         FROM skredprod.skred.SKREDHENDELSE AS h
-        LEFT JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
-        LEFT JOIN skredprod.skred.UTLOPUTLOSNINGOMR AS u ON u.skredID = h.skredID
-        LEFT JOIN skredprod.skred.Snoskred_Varslingsregioner AS r ON r.skredID = h.skredID
+        INNER JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
+        INNER JOIN skredprod.skred.UTLOPUTLOSNINGOMR AS u ON u.skredID = h.skredID
+        INNER JOIN skredprod.skred.Snoskred_Varslingsregioner AS r ON r.skredID = h.skredID
         WHERE h.SHAPE.STIntersects(geometry::STPolyFromText(?, ?)) = 1
             AND h.skredTidspunkt >= ?
             AND h.skredTidspunkt < ?
-            AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR h.registrertAv = 'Sentinel-1@unet')
+            AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR (h.registrertAv = 'Sentinel-1@unet' AND h.skredTidspunkt >= '2025-06-30'))
             AND h.regStatus != 'Slettet'
             {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ORDER BY t.registrertDato DESC
@@ -136,14 +145,14 @@ def events_point_within():
                 r.OMRAADEID AS regionId,
                 t.eksposisjonUtlopsomr AS exp,
                 ((CAST(t.eksposisjonUtlopsomr as INT) + 360) * 10 + 225) / 450 % 8 as exposition,
-                (t.hoydeStoppSkred_moh / 200) * 200 as elevation,
+                ISNULL((t.hoydeStoppSkred_moh / 200) * 200, -9999) as elevation,
                 h.noySkredTidspunkt
             FROM skredprod.skred.SKREDHENDELSE AS h
-            LEFT JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
-            LEFT JOIN skredprod.skred.Snoskred_Varslingsregioner AS r ON r.skredID = h.skredID
+            INNER JOIN skredprod.skred.SKREDTEKNISKEPARAMETRE AS t ON t.skredID = h.skredID
+            INNER JOIN skredprod.skred.Snoskred_Varslingsregioner AS r ON r.skredID = h.skredID
             WHERE h.skredTidspunkt >= ?
                 AND h.skredTidspunkt < ?
-                AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR h.registrertAv = 'Sentinel-1@unet')
+                AND ((h.registrertAv = 'Sentinel-1' AND h.skredTidspunkt < '2025-06-30') OR (h.registrertAv = 'Sentinel-1@unet' AND h.skredTidspunkt >= '2025-06-30'))
                 AND h.regStatus != 'Slettet'
                 {f'AND r.OMRAADEID IN ({",".join("?" * len(regions))})' if regions else ''}
         ),
